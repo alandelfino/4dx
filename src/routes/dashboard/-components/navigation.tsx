@@ -1,10 +1,12 @@
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { Link, useRouterState } from "@tanstack/react-router";
+import { auth } from '@/lib/auth'
 import { Copyright } from "lucide-react";
 
 export function Navigation() {
 
     const router = useRouterState()
+    const isDirector = auth.getCurrentSector()?.profile === 'director'
 
     const navigations = [
         {
@@ -14,6 +16,11 @@ export function Navigation() {
                     label: 'Colaboradores',
                     icon: <Copyright />,
                     href: '/dashboard/collaborators',
+                },
+                {
+                    label: 'Setores',
+                    icon: <Copyright />,
+                    href: '/dashboard/sectors',
                 },
             ]
         },
@@ -29,9 +36,17 @@ export function Navigation() {
         },
     ]
 
+    const filteredNavigations = navigations.map((group) => ({
+        ...group,
+        items: group.items.filter((item) => (
+            (item.href !== '/dashboard/collaborators' || isDirector) &&
+            (item.href !== '/dashboard/sectors' || isDirector)
+        ))
+    }))
+
     return (
 
-        navigations.map((group) => (
+        filteredNavigations.map((group) => (
             <SidebarGroup key={group.groupName}>
                 <SidebarGroupLabel className="text-neutral-400 font-normal">{group.groupName}</SidebarGroupLabel>
                 <SidebarMenu>

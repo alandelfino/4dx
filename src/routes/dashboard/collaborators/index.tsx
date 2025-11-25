@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Topbar } from '../-components/topbar'
@@ -8,18 +8,37 @@ import { toast } from 'sonner'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetClose } from '@/components/ui/sheet'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+ 
 import { FieldGroup } from '@/components/ui/field'
 import { collaboratorInputSchema, listCollaborators, createCollaborator, updateCollaborator, deleteCollaborator } from '@/lib/collaborators'
 import type { Collaborator } from '@/lib/collaborators'
+import { auth } from '@/lib/auth'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { Edit, RefreshCcw, Trash, UserPlus } from 'lucide-react'
 
+const ALLOWED_ROLES = ['director'] as const
+
 export const Route = createFileRoute('/dashboard/collaborators/')({
   component: RouteComponent,
+  staticData: { allowedRoles: ALLOWED_ROLES },
+  beforeLoad: async () => {
+    const session = await auth.fetchSession()
+    if (!session) {
+      throw redirect({ to: '/sign-in' })
+    }
+    const res = auth.canActivate(ALLOWED_ROLES)
+    if (!res.allowed) {
+      if (res.reason === 'unauthenticated') {
+        throw redirect({ to: '/sign-in' })
+      }
+      throw redirect({ to: '/access-denied' })
+    }
+  },
 })
 
 function RouteComponent() {
@@ -31,7 +50,7 @@ function RouteComponent() {
   const [openEdit, setOpenEdit] = useState<null | Collaborator>(null)
   const [openDelete, setOpenDelete] = useState<null | number>(null)
 
-  const { data, isLoading, isRefetching, isError, refetch } = useQuery({
+  const { data, isLoading, isRefetching, isError, error, refetch } = useQuery({
     queryKey: ['collaborators', currentPage, perPage],
     queryFn: () => listCollaborators(currentPage, Math.min(50, perPage)),
     refetchOnWindowFocus: false,
@@ -43,8 +62,11 @@ function RouteComponent() {
   const totalPages = typeof data?.pageTotal === 'number' ? data!.pageTotal : Math.max(1, Math.ceil(totalItems / perPage))
 
   useEffect(() => {
-    if (isError) toast.error('Erro ao carregar colaboradores')
-  }, [isError])
+    if (isError) {
+      const msg = (error as any)?.response?.data?.message
+      toast.error(msg ?? 'Erro ao carregar colaboradores')
+    }
+  }, [isError, error])
 
   useEffect(() => { setSelectedIds([]) }, [currentPage, perPage, isRefetching])
 
@@ -75,7 +97,6 @@ function RouteComponent() {
     },
     { id: 'name', header: 'Nome', cell: (row) => row.name, className: 'border-r p-2!' },
     { id: 'email', header: 'Email', cell: (row) => row.email, className: 'border-r p-2!' },
-    { id: 'profile', header: 'Perfil', cell: (row) => row.profile, className: 'border-r p-2!' },
   ]
 
   const createForm = useForm<z.infer<typeof collaboratorInputSchema>>({ resolver: zodResolver(collaboratorInputSchema), defaultValues: { name: '', email: '', profile: 'collaborator' } })
@@ -84,19 +105,19 @@ function RouteComponent() {
   const createMut = useMutation({
     mutationFn: (input: z.infer<typeof collaboratorInputSchema>) => createCollaborator(input),
     onSuccess: () => { toast.success('Colaborador criado'); qc.invalidateQueries({ queryKey: ['collaborators'] }); setOpenCreate(false) },
-    onError: () => toast.error('Erro ao criar colaborador'),
+    onError: (error: any) => toast.error(error?.response?.data?.message ?? 'Erro ao criar colaborador'),
   })
 
   const updateMut = useMutation({
     mutationFn: (payload: { id: number, input: z.infer<typeof collaboratorInputSchema> }) => updateCollaborator(payload.id, payload.input),
     onSuccess: () => { toast.success('Colaborador atualizado'); qc.invalidateQueries({ queryKey: ['collaborators'] }); setOpenEdit(null) },
-    onError: () => toast.error('Erro ao atualizar colaborador'),
+    onError: (error: any) => toast.error(error?.response?.data?.message ?? 'Erro ao atualizar colaborador'),
   })
 
   const deleteMut = useMutation({
     mutationFn: (id: number) => deleteCollaborator(id),
     onSuccess: () => { toast.success('Colaborador excluído'); qc.invalidateQueries({ queryKey: ['collaborators'] }); setOpenDelete(null) },
-    onError: () => toast.error('Erro ao excluir colaborador'),
+    onError: (error: any) => toast.error(error?.response?.data?.message ?? 'Erro ao excluir colaborador'),
   })
 
   return (
@@ -148,7 +169,7 @@ function RouteComponent() {
 
       <Sheet open={openCreate} onOpenChange={setOpenCreate}>
         <SheetContent aria-label="Cadastrar colaborador">
-          <Form {...(createForm as any)}>
+          <Form {...createForm}>
             <form onSubmit={createForm.handleSubmit((values) => createMut.mutate(values))} className="flex flex-col h-full">
               <SheetHeader>
                 <SheetTitle>Novo colaborador</SheetTitle>
@@ -174,15 +195,7 @@ function RouteComponent() {
                       <FormMessage />
                     </FormItem>
                   )} />
-                  <FormField control={createForm.control} name="profile" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Perfil</FormLabel>
-                      <FormControl>
-                        <Input {...field} aria-invalid={!!createForm.formState.errors?.profile} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+ 
                 </FieldGroup>
               </div>
               <div className="mt-auto border-t p-4">
@@ -200,7 +213,7 @@ function RouteComponent() {
 
       <Sheet open={!!openEdit} onOpenChange={(v) => setOpenEdit(v ? openEdit : null)}>
         <SheetContent aria-label="Editar colaborador">
-          <Form {...(editForm as any)}>
+          <Form {...editForm}>
             <form onSubmit={editForm.handleSubmit((values) => openEdit && updateMut.mutate({ id: openEdit.id, input: values }))} className="flex flex-col h-full">
               <SheetHeader>
                 <SheetTitle>Editar colaborador</SheetTitle>
@@ -226,15 +239,7 @@ function RouteComponent() {
                       <FormMessage />
                     </FormItem>
                   )} />
-                  <FormField control={editForm.control} name="profile" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Perfil</FormLabel>
-                      <FormControl>
-                        <Input {...field} aria-invalid={!!editForm.formState.errors?.profile} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+ 
                 </FieldGroup>
               </div>
               <div className="mt-auto border-t p-4">
@@ -250,24 +255,18 @@ function RouteComponent() {
         </SheetContent>
       </Sheet>
 
-      <Sheet open={!!openDelete} onOpenChange={(v) => setOpenDelete(v ? openDelete : null)}>
-        <SheetContent aria-label="Excluir colaborador">
-          <div className="flex flex-col h-full">
-            <SheetHeader>
-              <SheetTitle>Excluir colaborador</SheetTitle>
-              <SheetDescription>Esta ação não pode ser desfeita.</SheetDescription>
-            </SheetHeader>
-            <div className="mt-auto border-t p-4">
-              <div className="grid grid-cols-2 gap-4">
-                <SheetClose asChild>
-                  <Button variant="outline" className="w-full" onClick={() => setOpenDelete(null)}>Cancelar</Button>
-                </SheetClose>
-                <Button variant={'destructive'} disabled={deleteMut.isPending} className="w-full" onClick={() => openDelete && deleteMut.mutate(openDelete)}>Excluir</Button>
-              </div>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+      <Dialog open={!!openDelete} onOpenChange={(v) => setOpenDelete(v ? openDelete : null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir colaborador</DialogTitle>
+            <DialogDescription>Esta ação não pode ser desfeita.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenDelete(null)} disabled={deleteMut.isPending}>Cancelar</Button>
+            <Button variant={'destructive'} onClick={() => openDelete && deleteMut.mutate(openDelete)} disabled={deleteMut.isPending}>Excluir</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

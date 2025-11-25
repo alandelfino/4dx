@@ -72,11 +72,12 @@ export function EditBrandSheet({
                 // Atualiza a listagem de marcas
                 queryClient.invalidateQueries({ queryKey: ['brands'] })
             } else {
-                toast.error('Erro ao salvar marca')
+                const msg = (response as any)?.data?.message
+                toast.error(msg ?? 'Erro ao salvar marca')
             }
         },
-        onError: (error) => {
-            toast.error(error.message)
+        onError: (error: any) => {
+            toast.error(error?.response?.data?.message ?? error?.message ?? 'Erro ao salvar marca')
         },
     })
 

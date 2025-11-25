@@ -52,7 +52,29 @@ const loginInstance = axios.create({
     },
 })
 
-export const loginResponseSchema = z.object({
+const sectorSchema = z.object({
+    id: z.number().int(),
+    created_at: z.union([z.number().int(), z.string()]),
+    updated_at: z.union([z.number().int(), z.string()]),
+    name: z.string().min(1),
+    company_id: z.number().int(),
+    leader_id: z.number().int(),
+    parent_id: z.number().int(),
+    profile: z.enum(['director', 'collaborator'])
+})
+
+const loginSectorSelectionSchema = z.object({
+    user: z.object({
+        id: z.number().int(),
+        created_at: z.union([z.number().int(), z.string()]),
+        name: z.string().min(1),
+        email: z.string().email(),
+        company_id: z.number().int(),
+    }),
+    sectors: z.array(sectorSchema)
+})
+
+const loginWithSectorSchema = z.object({
     authToken: z.string().refine((t) => t.split('.').length >= 3, { message: 'Token inválido' }),
     user: z.object({
         id: z.number().int(),
@@ -60,40 +82,55 @@ export const loginResponseSchema = z.object({
         name: z.string().min(1),
         email: z.string().email(),
         company_id: z.number().int(),
-        profile: z.string().min(1),
     }),
+    sector: sectorSchema,
+})
+
+const userCoreSchema = z.object({
+    id: z.number().int(),
+    created_at: z.union([z.number().int(), z.string()]),
+    name: z.string().min(1),
+    email: z.string().email(),
+    company_id: z.number().int(),
+})
+
+const sessionResponseSchema = z.object({
+    sector: sectorSchema,
+    user: userCoreSchema,
 })
 
 loginInstance.interceptors.response.use((response) => {
     if (response.status === 200) {
-        const parsed = loginResponseSchema.safeParse(response.data)
-        if (!parsed.success) {
+        const parsedSelect = loginSectorSelectionSchema.safeParse(response.data)
+        const parsedWithSector = loginWithSectorSchema.safeParse(response.data)
+        if (!parsedSelect.success && !parsedWithSector.success) {
             throw new Error('Resposta de login fora do formato especificado')
         }
-        const { authToken, user } = parsed.data
-        try {
-            normalizeTokenStorage(authToken)
-        } catch {
-            localStorage.setItem(`${getSubdomain()}-directa-authToken`, authToken)
+        if (parsedWithSector.success) {
+            const { authToken, user, sector } = parsedWithSector.data
+            try {
+                normalizeTokenStorage(authToken)
+            } catch {
+                localStorage.setItem(`${getSubdomain()}-directa-authToken`, authToken)
+            }
+            localStorage.setItem(`${getSubdomain()}-directa-user`, JSON.stringify(user))
+            localStorage.setItem(`${getSubdomain()}-directa-sector`, JSON.stringify(sector))
+            try {
+                const avatarUrl = (user as any)?.image?.url ?? (user as any)?.avatar_url ?? null
+                window.dispatchEvent(new CustomEvent('directa:user-updated', {
+                    detail: { name: user?.name, email: user?.email, avatarUrl }
+                }))
+            } catch { }
         }
-        localStorage.setItem(`${getSubdomain()}-directa-user`, JSON.stringify(user))
-        try {
-            const avatarUrl = (user as any)?.image?.url ?? (user as any)?.avatar_url ?? null
-            window.dispatchEvent(new CustomEvent('directa:user-updated', {
-                detail: { name: user?.name, email: user?.email, avatarUrl }
-            }))
-        } catch { }
     }
     return response
 }, (error) => {
     const status = error?.response?.status
     const message = error?.response?.data?.message
     if (status === 401 || status === 403) {
-        toast.error('Credenciais inválidas', { description: 'Email ou senha incorretos.' })
-    } else if (message === 'Unable to locate request.') {
-        toast.error('Falha no login', { description: 'Serviço indisponível ou rota inválida.' })
+        toast.error(message ?? 'Credenciais inválidas')
     } else {
-        toast.error('Erro ao efetuar login')
+        toast.error(message ?? 'Erro ao efetuar login')
     }
     return Promise.reject(error)
 })
@@ -186,6 +223,40 @@ export const auth = {
         const payload = { ...values, company_id: companyId }
         return loginInstance.post(`/api:aHWQkL67/auth/login`, payload)
     },
+    loginWithSector: async (sectorId: number, values: z.infer<typeof formSchema>) => {
+        const sub = getSubdomain()
+        let companyId: number | null = null
+        try {
+            const raw = localStorage.getItem(`${sub}-directa-company`)
+            if (raw) {
+                const obj = JSON.parse(raw)
+                companyId = obj?.id ?? null
+            }
+        } catch { }
+
+        const payload = { ...values, company_id: companyId, sector_id: sectorId }
+        return loginInstance.post(`/api:aHWQkL67/auth/login`, payload)
+    },
+
+    fetchSession: async (): Promise<z.infer<typeof sessionResponseSchema> | null> => {
+        try {
+            const resp = await privateInstance.get(`/api:aHWQkL67/auth/session`)
+            if (resp.status !== 200) return null
+            const parsed = sessionResponseSchema.safeParse(resp.data)
+            if (!parsed.success) return null
+            const { user, sector } = parsed.data
+            try { localStorage.setItem(`${getSubdomain()}-directa-user`, JSON.stringify(user)) } catch {}
+            try { localStorage.setItem(`${getSubdomain()}-directa-sector`, JSON.stringify(sector)) } catch {}
+            return parsed.data
+        } catch (e: any) {
+            const code = e?.response?.data?.code
+            const status = e?.response?.status
+            if (status === 401 || code === 'ERROR_CODE_UNAUTHORIZED') {
+                return null
+            }
+            return null
+        }
+    },
     getCompany: async () => {
         // Usar o servidor n7 para companies
         const response = await publicInstance.get(`/api:kdrFy_tm/companies/${getSubdomain()}`)
@@ -196,14 +267,52 @@ export const auth = {
         return { status: response.status, data: null }
     },
     
-    // Guard específico para rotas do dashboard (/dashboard/**)
-    dashboardGuard: async () => {
+    // Retorna se há token de autenticação válido
+    isAuthenticated: (): boolean => {
         const authToken = getToken()
-        if (!authToken) {
-            return
+        return typeof authToken === 'string' && authToken.length > 0
+    },
+
+    // Obtém usuário atual armazenado (se existir)
+    getCurrentUser: (): { id: number; name: string; email: string; company_id?: number } | null => {
+        try {
+            const raw = localStorage.getItem(`${getSubdomain()}-directa-user`)
+            if (!raw) return null
+            const user = JSON.parse(raw) as { id?: number; name?: string; email?: string; company_id?: number }
+            if (typeof user.id !== 'number' || typeof user.name !== 'string' || typeof user.email !== 'string') {
+                return null
+            }
+            return { id: user.id, name: user.name, email: user.email, company_id: user.company_id }
+        } catch {
+            return null
         }
-        return
-    }
+    },
+
+    getCurrentSector: (): z.infer<typeof sectorSchema> | null => {
+        try {
+            const raw = localStorage.getItem(`${getSubdomain()}-directa-sector`)
+            if (!raw) return null
+            const sector = JSON.parse(raw)
+            const parsed = sectorSchema.safeParse(sector)
+            if (!parsed.success) return null
+            return parsed.data
+        } catch {
+            return null
+        }
+    },
+
+    // Verifica se o setor atual pode acessar com base nos perfis permitidos
+    canActivate: (allowedRoles: readonly ('director' | 'collaborator')[]): { allowed: boolean; reason: 'unauthenticated' | 'forbidden' } => {
+        if (!auth.isAuthenticated()) {
+            return { allowed: false, reason: 'unauthenticated' }
+        }
+        const sector = auth.getCurrentSector()
+        if (!sector) {
+            return { allowed: false, reason: 'unauthenticated' }
+        }
+        const allowed = allowedRoles.includes(sector.profile)
+        return { allowed, reason: allowed ? 'unauthenticated' : 'forbidden' }
+    },
 }
 
 // Exportar instâncias n7 para uso em páginas que manipulam companies

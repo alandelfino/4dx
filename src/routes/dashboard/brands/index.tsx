@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { Topbar } from '../-components/topbar'
 import { Button } from '@/components/ui/button'
 import { Edit, Funnel, RefreshCcw, Trash, Tag } from 'lucide-react'
@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { NewBrandSheet } from './-components/new-brand'
-import { privateInstance } from '@/lib/auth'
+import { privateInstance, auth } from '@/lib/auth'
 import { EditBrandSheet } from './-components/edit-brand'
 import { DeleteBrand } from './-components/delete-brand'
 import { DataTable } from '@/components/data-table'
@@ -16,8 +16,24 @@ import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyCont
 
 
 
+const ALLOWED_ROLES = ['director'] as const
+
 export const Route = createFileRoute('/dashboard/brands/')({
   component: RouteComponent,
+  staticData: { allowedRoles: ALLOWED_ROLES },
+  beforeLoad: async () => {
+    const session = await auth.fetchSession()
+    if (!session) {
+      throw redirect({ to: '/sign-in' })
+    }
+    const res = auth.canActivate(ALLOWED_ROLES)
+    if (!res.allowed) {
+      if (res.reason === 'unauthenticated') {
+        throw redirect({ to: '/sign-in' })
+      }
+      throw redirect({ to: '/access-denied' })
+    }
+  },
 })
 
 type Brand = {
@@ -47,7 +63,7 @@ function RouteComponent() {
   const [totalItems, setTotalItems] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
 
-  const { data, isLoading, isRefetching, isError, refetch } = useQuery({
+  const { data, isLoading, isRefetching, isError, error, refetch } = useQuery({
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     queryKey: ['brands', currentPage, perPage],
@@ -118,9 +134,10 @@ function RouteComponent() {
 
   useEffect(() => {
     if (isError) {
-      toast.error('Erro ao carregar marcas')
+      const msg = (error as any)?.response?.data?.message
+      toast.error(msg ?? 'Erro ao carregar marcas')
     }
-  }, [isError])
+  }, [isError, error])
 
   // Resetar seleção quando mudar de página ou itens por página
   useEffect(() => {
