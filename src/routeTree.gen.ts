@@ -14,6 +14,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SignInIndexRouteImport } from './routes/sign-in/index'
 import { Route as AccessDeniedIndexRouteImport } from './routes/access-denied/index'
 import { Route as DashboardSectorsIndexRouteImport } from './routes/dashboard/sectors/index'
+import { Route as DashboardGoalsIndexRouteImport } from './routes/dashboard/goals/index'
 import { Route as DashboardCollaboratorsIndexRouteImport } from './routes/dashboard/collaborators/index'
 import { Route as DashboardBrandsIndexRouteImport } from './routes/dashboard/brands/index'
 
@@ -42,6 +43,11 @@ const DashboardSectorsIndexRoute = DashboardSectorsIndexRouteImport.update({
   path: '/sectors/',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
+const DashboardGoalsIndexRoute = DashboardGoalsIndexRouteImport.update({
+  id: '/goals/',
+  path: '/goals/',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
 const DashboardCollaboratorsIndexRoute =
   DashboardCollaboratorsIndexRouteImport.update({
     id: '/collaborators/',
@@ -61,6 +67,7 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof SignInIndexRoute
   '/dashboard/brands': typeof DashboardBrandsIndexRoute
   '/dashboard/collaborators': typeof DashboardCollaboratorsIndexRoute
+  '/dashboard/goals': typeof DashboardGoalsIndexRoute
   '/dashboard/sectors': typeof DashboardSectorsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -70,6 +77,7 @@ export interface FileRoutesByTo {
   '/sign-in': typeof SignInIndexRoute
   '/dashboard/brands': typeof DashboardBrandsIndexRoute
   '/dashboard/collaborators': typeof DashboardCollaboratorsIndexRoute
+  '/dashboard/goals': typeof DashboardGoalsIndexRoute
   '/dashboard/sectors': typeof DashboardSectorsIndexRoute
 }
 export interface FileRoutesById {
@@ -80,6 +88,7 @@ export interface FileRoutesById {
   '/sign-in/': typeof SignInIndexRoute
   '/dashboard/brands/': typeof DashboardBrandsIndexRoute
   '/dashboard/collaborators/': typeof DashboardCollaboratorsIndexRoute
+  '/dashboard/goals/': typeof DashboardGoalsIndexRoute
   '/dashboard/sectors/': typeof DashboardSectorsIndexRoute
 }
 export interface FileRouteTypes {
@@ -91,6 +100,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/dashboard/brands'
     | '/dashboard/collaborators'
+    | '/dashboard/goals'
     | '/dashboard/sectors'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -100,6 +110,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/dashboard/brands'
     | '/dashboard/collaborators'
+    | '/dashboard/goals'
     | '/dashboard/sectors'
   id:
     | '__root__'
@@ -109,6 +120,7 @@ export interface FileRouteTypes {
     | '/sign-in/'
     | '/dashboard/brands/'
     | '/dashboard/collaborators/'
+    | '/dashboard/goals/'
     | '/dashboard/sectors/'
   fileRoutesById: FileRoutesById
 }
@@ -156,6 +168,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSectorsIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    '/dashboard/goals/': {
+      id: '/dashboard/goals/'
+      path: '/goals'
+      fullPath: '/dashboard/goals'
+      preLoaderRoute: typeof DashboardGoalsIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
     '/dashboard/collaborators/': {
       id: '/dashboard/collaborators/'
       path: '/collaborators'
@@ -176,12 +195,14 @@ declare module '@tanstack/react-router' {
 interface DashboardRouteRouteChildren {
   DashboardBrandsIndexRoute: typeof DashboardBrandsIndexRoute
   DashboardCollaboratorsIndexRoute: typeof DashboardCollaboratorsIndexRoute
+  DashboardGoalsIndexRoute: typeof DashboardGoalsIndexRoute
   DashboardSectorsIndexRoute: typeof DashboardSectorsIndexRoute
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardBrandsIndexRoute: DashboardBrandsIndexRoute,
   DashboardCollaboratorsIndexRoute: DashboardCollaboratorsIndexRoute,
+  DashboardGoalsIndexRoute: DashboardGoalsIndexRoute,
   DashboardSectorsIndexRoute: DashboardSectorsIndexRoute,
 }
 

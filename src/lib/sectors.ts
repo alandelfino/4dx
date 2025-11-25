@@ -2,22 +2,22 @@ import z from 'zod'
 import { privateInstance } from './auth'
 
 export const sectorSchema = z.object({
-  id: z.number().int(),
-  created_at: z.union([z.number().int(), z.string()]),
-  updated_at: z.union([z.number().int(), z.string()]),
-  name: z.string().min(1),
-  company_id: z.number().int(),
-  leader_id: z.number().int(),
-  parent_id: z.number().int(),
-  profile: z.enum(['director', 'collaborator']),
+  id: z.number({ message: 'ID inválido' }).int(),
+  created_at: z.union([z.number({ message: 'Data de criação inválida' }).int(), z.string({ message: 'Data de criação inválida' })]),
+  updated_at: z.union([z.number({ message: 'Data de atualização inválida' }).int(), z.string({ message: 'Data de atualização inválida' })]),
+  name: z.string({ message: 'Nome é obrigatório' }).min(1, { message: 'Nome é obrigatório' }),
+  company_id: z.number({ message: 'Empresa inválida' }).int(),
+  leader_id: z.number({ message: 'Líder inválido' }).int(),
+  parent_id: z.number({ message: 'Setor pai inválido' }).int(),
+  profile: z.enum(['director', 'collaborator'], { message: 'Perfil inválido' }),
 })
 
 export const sectorInputSchema = z.object({
-  name: z.string().min(1),
-  company_id: z.number().int().optional(),
-  leader_id: z.number().int().optional(),
-  parent_id: z.number().int(),
-  profile: z.enum(['director', 'collaborator']).optional(),
+  name: z.string({ message: 'Nome é obrigatório' }).min(1, { message: 'Nome é obrigatório' }),
+  company_id: z.number({ message: 'Empresa inválida' }).int().optional(),
+  leader_id: z.number({ message: 'Líder inválido' }).int().optional(),
+  parent_id: z.number({ message: 'Setor pai inválido' }).int(),
+  profile: z.enum(['director', 'collaborator'], { message: 'Perfil inválido' }).optional(),
 })
 
 export type Sector = z.infer<typeof sectorSchema>

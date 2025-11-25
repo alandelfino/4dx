@@ -22,6 +22,11 @@ export function Navigation() {
                     icon: <Copyright />,
                     href: '/dashboard/sectors',
                 },
+                {
+                    label: 'Metas',
+                    icon: <Copyright />,
+                    href: '/dashboard/goals',
+                },
             ]
         },
         {
@@ -40,7 +45,8 @@ export function Navigation() {
         ...group,
         items: group.items.filter((item) => (
             (item.href !== '/dashboard/collaborators' || isDirector) &&
-            (item.href !== '/dashboard/sectors' || isDirector)
+            (item.href !== '/dashboard/sectors' || isDirector) &&
+            (item.href !== '/dashboard/goals' || isDirector)
         ))
     }))
 

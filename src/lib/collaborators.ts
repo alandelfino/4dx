@@ -2,17 +2,17 @@ import z from 'zod'
 import { privateInstance } from './auth'
 
 export const collaboratorSchema = z.object({
-  id: z.number().int(),
-  created_at: z.union([z.number().int(), z.string()]),
-  name: z.string().min(1),
-  email: z.string().email(),
-  profile: z.enum(['director', 'collaborator']),
+  id: z.number({ message: 'ID inválido' }).int(),
+  created_at: z.union([z.number({ message: 'Data de criação inválida' }).int(), z.string({ message: 'Data de criação inválida' })]),
+  name: z.string({ message: 'Nome é obrigatório' }).min(1, { message: 'Nome é obrigatório' }),
+  email: z.string().email('E-mail inválido'),
+  profile: z.enum(['director', 'collaborator'], { message: 'Perfil inválido' }),
 })
 
 export const collaboratorInputSchema = z.object({
-  name: z.string().min(1),
-  email: z.string().email(),
-  profile: z.enum(['director', 'collaborator']),
+  name: z.string({ message: 'Nome é obrigatório' }).min(1, { message: 'Nome é obrigatório' }),
+  email: z.string().email('E-mail inválido'),
+  profile: z.enum(['director', 'collaborator'], { message: 'Perfil inválido' }),
 })
 
 export type Collaborator = z.infer<typeof collaboratorSchema>

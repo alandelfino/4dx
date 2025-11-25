@@ -3,7 +3,7 @@ import axios from 'axios'
 import { toast } from 'sonner'
 
 export const formSchema = z.object({
-    email: z.email(),
+    email: z.string().email('E-mail inválido'),
     password: z.string().min(2, 'A senha deve ter pelo menos 2 caracteres'),
 })
 
@@ -53,21 +53,21 @@ const loginInstance = axios.create({
 })
 
 const sectorSchema = z.object({
-    id: z.number().int(),
-    created_at: z.union([z.number().int(), z.string()]),
-    updated_at: z.union([z.number().int(), z.string()]),
-    name: z.string().min(1),
-    company_id: z.number().int(),
-    leader_id: z.number().int(),
-    parent_id: z.number().int(),
-    profile: z.enum(['director', 'collaborator'])
+    id: z.number({ message: 'ID inválido' }).int(),
+    created_at: z.union([z.number({ message: 'Data de criação inválida' }).int(), z.string({ message: 'Data de criação inválida' })]),
+    updated_at: z.union([z.number({ message: 'Data de atualização inválida' }).int(), z.string({ message: 'Data de atualização inválida' })]),
+    name: z.string({ message: 'Nome é obrigatório' }).min(1, { message: 'Nome é obrigatório' }),
+    company_id: z.number({ message: 'Empresa inválida' }).int(),
+    leader_id: z.number({ message: 'Líder inválido' }).int(),
+    parent_id: z.number({ message: 'Setor pai inválido' }).int(),
+    profile: z.enum(['director', 'collaborator'], { message: 'Perfil inválido' })
 })
 
 const loginSectorSelectionSchema = z.object({
     user: z.object({
         id: z.number().int(),
         created_at: z.union([z.number().int(), z.string()]),
-        name: z.string().min(1),
+        name: z.string({ message: 'Nome é obrigatório' }).min(1, { message: 'Nome é obrigatório' }),
         email: z.string().email(),
         company_id: z.number().int(),
     }),
@@ -79,7 +79,7 @@ const loginWithSectorSchema = z.object({
     user: z.object({
         id: z.number().int(),
         created_at: z.union([z.number().int(), z.string()]),
-        name: z.string().min(1),
+        name: z.string({ message: 'Nome é obrigatório' }).min(1, { message: 'Nome é obrigatório' }),
         email: z.string().email(),
         company_id: z.number().int(),
     }),
@@ -89,7 +89,7 @@ const loginWithSectorSchema = z.object({
 const userCoreSchema = z.object({
     id: z.number().int(),
     created_at: z.union([z.number().int(), z.string()]),
-    name: z.string().min(1),
+    name: z.string({ message: 'Nome é obrigatório' }).min(1, { message: 'Nome é obrigatório' }),
     email: z.string().email(),
     company_id: z.number().int(),
 })

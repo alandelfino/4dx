@@ -94,6 +94,14 @@ function RouteComponent() {
     setExpanded(next)
   }, [items])
 
+  const selectedSector = useMemo(() => {
+    if (selectedIds.length !== 1) return null
+    const id = selectedIds[0]
+    return items.find((i) => i.id === id) ?? null
+  }, [selectedIds, items])
+  const selectedSectorIsDirector = (selectedSector?.profile ?? '') === 'director'
+  const sectorById = useMemo(() => new Map(items.map((i) => [i.id, i])), [items])
+
   const treeItems = useMemo(() => {
     const all = items.map((raw) => {
       const idNum = typeof (raw as any).id === 'number' ? (raw as any).id : Number((raw as any).id)
@@ -203,7 +211,17 @@ function RouteComponent() {
           </div>
           <div className="flex items-center gap-2">
             {selectedIds.length === 1 ? (
-              <Button variant={'ghost'} onClick={() => { const item = items.find(i => i.id === selectedIds[0]); if (!item) return; setOpenEdit(item); editForm.reset({ name: item.name, leader_id: item.leader_id, parent_id: item.parent_id }) }}>
+              <Button
+                variant={'ghost'}
+                disabled={selectedSectorIsDirector}
+                onClick={() => {
+                  const item = items.find(i => i.id === selectedIds[0])
+                  if (!item) return
+                  if (item.profile === 'director') { toast.error('Setor com perfil diretor não pode ser editado'); return }
+                  setOpenEdit(item)
+                  editForm.reset({ name: item.name, leader_id: item.leader_id, parent_id: item.parent_id })
+                }}
+              >
                 <Edit /> Editar
               </Button>
             ) : (
@@ -212,7 +230,16 @@ function RouteComponent() {
               </Button>
             )}
             {selectedIds.length === 1 ? (
-              <Button variant={'ghost'} onClick={() => setOpenDelete(selectedIds[0])}>
+              <Button
+                variant={'ghost'}
+                disabled={selectedSectorIsDirector}
+                onClick={() => {
+                  const item = items.find(i => i.id === selectedIds[0])
+                  if (!item) return
+                  if (item.profile === 'director') { toast.error('Setor com perfil diretor não pode ser excluído'); return }
+                  setOpenDelete(item.id)
+                }}
+              >
                 <Trash /> Excluir
               </Button>
             ) : (
@@ -311,7 +338,14 @@ function RouteComponent() {
       <Sheet open={!!openEdit} onOpenChange={(v) => setOpenEdit(v ? openEdit : null)}>
         <SheetContent aria-label="Editar setor">
           <Form {...(editForm as any)}>
-            <form onSubmit={editForm.handleSubmit((values) => openEdit && updateMut.mutate({ id: openEdit.id, input: values }))} className="flex flex-col h-full">
+            <form
+              onSubmit={editForm.handleSubmit((values) => {
+                if (!openEdit) return
+                if (openEdit.profile === 'director') { toast.error('Setor com perfil diretor não pode ser editado'); return }
+                updateMut.mutate({ id: openEdit.id, input: values })
+              })}
+              className="flex flex-col h-full"
+            >
               <SheetHeader>
                 <SheetTitle>Editar setor</SheetTitle>
                 <SheetDescription>Atualize os dados do setor.</SheetDescription>
@@ -397,7 +431,7 @@ function RouteComponent() {
                   <SheetClose asChild>
                     <Button variant="outline" className="w-full" onClick={() => setOpenEdit(null)}>Cancelar</Button>
                   </SheetClose>
-                  <Button type="submit" disabled={updateMut.isPending} className="w-full">Salvar</Button>
+                  <Button type="submit" disabled={updateMut.isPending || (!!openEdit && openEdit.profile === 'director')} className="w-full">Salvar</Button>
                 </div>
               </div>
             </form>
@@ -413,7 +447,18 @@ function RouteComponent() {
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenDelete(null)} disabled={deleteMut.isPending}>Cancelar</Button>
-            <Button variant={'destructive'} onClick={() => openDelete && deleteMut.mutate(openDelete)} disabled={deleteMut.isPending}>Excluir</Button>
+            <Button
+              variant={'destructive'}
+              onClick={() => {
+                if (!openDelete) return
+                const item = sectorById.get(openDelete)
+                if ((item?.profile ?? '') === 'director') { toast.error('Setor com perfil diretor não pode ser excluído'); return }
+                deleteMut.mutate(openDelete)
+              }}
+              disabled={deleteMut.isPending || (!!openDelete && ((sectorById.get(openDelete)?.profile ?? '') === 'director'))}
+            >
+              Excluir
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
