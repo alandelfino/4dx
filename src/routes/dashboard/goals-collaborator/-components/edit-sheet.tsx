@@ -5,10 +5,10 @@ import { FieldGroup } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
 import { useQuery } from '@tanstack/react-query'
-import { listSegments } from '@/lib/segments'
-import { GoalValueFields } from './value-fields'
-import { GoalDateFields } from './date-fields'
 import { useEffect } from 'react'
+import { GoalValueFields } from '../../goals/-components/value-fields'
+import { GoalDateFields } from '../../goals/-components/date-fields'
+import { listGlobalGoalsForCollaborator } from '@/lib/goals'
 
 type Props = {
   open: boolean
@@ -18,27 +18,27 @@ type Props = {
   pending?: boolean
 }
 
-export function CreateGoalSheet({ open, onOpenChange, form, onSubmit, pending }: Props) {
+export function EditGoalSheetCollaborator({ open, onOpenChange, form, onSubmit, pending }: Props) {
   useEffect(() => {
     if (!open) {
-      try { form.reset() } catch {}
+      try { form.reset({ description: '', from: 0, to: 0, from_date: undefined as any, to_date: undefined as any, type: 'int', period: undefined as any, parent_id: undefined as any }) } catch {}
     }
   }, [open])
-  const { data: segData } = useQuery({
-    queryKey: ['segments-options'],
-    queryFn: () => listSegments(1, 100),
+  const { data: parentGoals } = useQuery({
+    queryKey: ['collab-global-goals'],
+    queryFn: () => listGlobalGoalsForCollaborator(),
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   })
-  const segments = Array.isArray(segData?.items) ? segData!.items : []
+  const globalGoals = Array.isArray(parentGoals) ? parentGoals : []
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent aria-label="Cadastrar meta" className="sm:max-w-2xl w-[88%]">
+      <SheetContent aria-label="Editar meta" className="sm:max-w-2xl w-[88%]">
         <Form {...(form as any)}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
             <SheetHeader>
-              <SheetTitle>Nova meta</SheetTitle>
-              <SheetDescription>Preencha os campos abaixo para cadastrar.</SheetDescription>
+              <SheetTitle>Editar meta</SheetTitle>
+              <SheetDescription>Atualize os dados da meta.</SheetDescription>
             </SheetHeader>
             <div className="flex-1 grid auto-rows-min gap-6 px-4 py-4">
               <FieldGroup>
@@ -51,18 +51,18 @@ export function CreateGoalSheet({ open, onOpenChange, form, onSubmit, pending }:
                     <FormMessage />
                   </FormItem>
                 )} />
-                <FormField control={form.control as any} name={'segment_id'} render={({ field }) => (
+                <FormField control={form.control as any} name={'parent_id'} render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Segmento</FormLabel>
+                    <FormLabel>Meta Pai</FormLabel>
                     <Select value={field.value != null ? String(field.value) : undefined} onValueChange={(v) => field.onChange(Number(v))}>
                       <FormControl>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecione o segmento" />
+                          <SelectValue placeholder="Selecione a meta pai" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {segments.map((s: any) => (
-                          <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                        {globalGoals.map((g: any) => (
+                          <SelectItem key={g.id} value={String(g.id)}>{g.description}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

@@ -77,7 +77,7 @@ export function DataTable<T extends { id?: number | string }>({
               {columns.map((col) => (
                 <TableHead
                   key={col.id}
-                  className={`border-r ${col.headerClassName ?? ''}`}
+                  className={`border-r !px-4 !py-0 ${col.headerClassName ?? ''}`}
                   style={col.width ? { width: col.width } : undefined}
                 >
                   {typeof col.header === 'function' ? col.header(data) : col.header}
@@ -160,7 +160,7 @@ export function DataTable<T extends { id?: number | string }>({
                       return (
                         <TableCell
                           key={col.id}
-                          className={`border-r !px-4 ${col.className ?? ''}`}
+                          className={`border-r !px-4 !py-0 ${col.className ?? ''}`}
                           style={fixedCellWidthPx ? { width: `${fixedCellWidthPx}px` } : col.width ? { width: col.width } : undefined}
                         >
                           {cellContent}
@@ -177,7 +177,7 @@ export function DataTable<T extends { id?: number | string }>({
                 {data.map((item, index) => (
                   <TableRow key={(item as any).id ?? index} className={`${rowClassName ?? 'h-10'} ${index % 2 === 0 ? '' : 'bg-neutral-50/20'}`}>
                     {columns.map((col) => (
-                      <TableCell key={col.id} className={`border-r !px-4 ${col.className ?? ''}`} style={col.width ? { width: col.width } : undefined}>
+                      <TableCell key={col.id} className={`border-r !px-4 !py-0 ${col.className ?? ''}`} style={col.width ? { width: col.width } : undefined}>
                         {col.cell(item)}
                       </TableCell>
                     ))}

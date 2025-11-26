@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Edit, Funnel, RefreshCcw, Trash, Tag } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useEffect, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { NewBrandSheet } from './-components/new-brand'
 import { privateInstance, auth } from '@/lib/auth'
@@ -57,6 +57,7 @@ type BrandsResponse = {
 }
 
 function RouteComponent() {
+  const qc = useQueryClient()
   const [currentPage, setCurrentPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
   const [selectedBrands, setSelectedBrands] = useState<number[]>([])
@@ -157,6 +158,18 @@ function RouteComponent() {
       setCurrentPage(totalPages)
     }
   }, [totalPages, currentPage])
+
+  useEffect(() => {
+    return () => {
+      setSelectedBrands([])
+      setCurrentPage(1)
+      setPerPage(10)
+      setBrands([])
+      setTotalItems(0)
+      setTotalPages(1)
+      qc.removeQueries({ queryKey: ['brands'] })
+    }
+  }, [])
 
 
   // Gerenciar seleção de itens

@@ -72,6 +72,18 @@ function RouteComponent() {
 
   useEffect(() => { if (currentPage > totalPages && totalPages > 0) setCurrentPage(totalPages) }, [totalPages, currentPage])
 
+  useEffect(() => {
+    return () => {
+      setSelectedIds([])
+      setOpenCreate(false)
+      setOpenEdit(null)
+      setOpenDelete(null)
+      setCurrentPage(1)
+      setPerPage(20)
+      qc.removeQueries({ queryKey: ['collaborators'] })
+    }
+  }, [])
+
   const columns: ColumnDef<Collaborator>[] = [
     {
       id: 'select',

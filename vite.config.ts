@@ -20,6 +20,6 @@ export default defineConfig({
     },
   },
   server: {
-    host: "grupotitanium.localhost"
+    host: "0.0.0.0"
   }
 })

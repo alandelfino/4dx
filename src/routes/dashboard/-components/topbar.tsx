@@ -9,7 +9,7 @@ export type BreadcrumbItem = {
     isLast: boolean
 }
 
-export function Topbar({ title, breadcrumbs }: { title: string, breadcrumbs: BreadcrumbItem[] }) {
+export function Topbar({ title, breadcrumbs, showSidebarTrigger = true }: { title: string, breadcrumbs: BreadcrumbItem[], showSidebarTrigger?: boolean }) {
 
     return (
         <div className='w-full bg-pattern dark:bg-neutral-950'>
@@ -17,7 +17,7 @@ export function Topbar({ title, breadcrumbs }: { title: string, breadcrumbs: Bre
             {/* Top navigation - Fixed */}
             <div className='border-b h-16 w-full flex items-center px-2 bg-white dark:bg-neutral-900 sticky top-0 z-10 gap-4'>
 
-                <SidebarTrigger />
+                {showSidebarTrigger && <SidebarTrigger />}
 
                 <h1 className='font-semibold'>{title}</h1>
 

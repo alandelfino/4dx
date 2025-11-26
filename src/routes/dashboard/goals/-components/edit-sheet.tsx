@@ -3,6 +3,9 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '
 import { Input } from '@/components/ui/input'
 import { FieldGroup } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
+import { useQuery } from '@tanstack/react-query'
+import { listSegments } from '@/lib/segments'
 import { GoalValueFields } from './value-fields'
 import { GoalDateFields } from './date-fields'
 import { useEffect } from 'react'
@@ -19,10 +22,18 @@ export function EditGoalSheet({ open, onOpenChange, form, onSubmit, pending }: P
   useEffect(() => {
     if (!open) {
       try {
-        form.reset({ description: '', from: 0, to: 0, from_date: undefined as any, to_date: undefined as any, type: 'int', period: undefined as any })
+        form.reset({ description: '', from: 0, to: 0, from_date: undefined as any, to_date: undefined as any, type: 'int', period: undefined as any, segment_id: undefined as any })
       } catch {}
     }
   }, [open])
+  const { data: segData } = useQuery({
+    queryKey: ['segments-options'],
+    queryFn: () => listSegments(1, 100),
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  })
+  const segments = Array.isArray(segData?.items) ? segData!.items : []
+  
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent aria-label="Editar meta" className="sm:max-w-2xl w-[88%]">
@@ -40,6 +51,24 @@ export function EditGoalSheet({ open, onOpenChange, form, onSubmit, pending }: P
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control as any} name={'segment_id'} render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Segmento</FormLabel>
+                    <Select value={field.value != null ? String(field.value) : undefined} onValueChange={(v) => field.onChange(Number(v))}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Selecione o segmento" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {segments.map((s: any) => (
+                          <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )} />

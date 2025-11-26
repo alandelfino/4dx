@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { LoginForm } from "./-components/login-form"
 import { useEffect, useState } from 'react'
 import axios from 'axios'
@@ -9,6 +9,7 @@ export const Route = createFileRoute('/sign-in/')({
 })
 
 export default function RouteComponent() {
+    const navigate = useNavigate()
     const [logoUrl, setLogoUrl] = useState<string | null>(null)
     const [companyName, setCompanyName] = useState<string | null>(null)
     const [isLoadingCompany, setIsLoadingCompany] = useState<boolean>(true)
@@ -21,14 +22,14 @@ export default function RouteComponent() {
             .then((res) => {
                 const data = res?.data
                 if (!data || !data.alias) return
-                try { localStorage.setItem(`${sub}-directa-company`, JSON.stringify(data)) } catch {}
+                try { localStorage.setItem(`${sub}-directa-company`, JSON.stringify(data)) } catch { void 0 }
                 const url: string | undefined = data?.logo?.url
                 if (url && typeof url === 'string') setLogoUrl(url)
                 setCompanyName(data?.name ?? null)
                 setIsLoadingCompany(false)
             })
-            .catch(() => { setIsLoadingCompany(false) })
-    }, [])
+            .catch(() => { setIsLoadingCompany(false); navigate({ to: '/company-not-found' }) })
+    }, [navigate])
 
     return (
         <div className="grid min-h-svh lg:grid-cols-2 relative">

@@ -9,7 +9,7 @@ import { useMutation } from "@tanstack/react-query"
 import { privateInstance } from "@/lib/auth"
 import { toast } from "sonner"
 
-type UserT = { email: string, name: string, avatarUrl?: string | null }
+type UserT = { email: string, name: string, sectorName?: string | null, avatarUrl?: string | null }
 
 export function TopbarUser() {
   const navigate = useNavigate()
@@ -35,8 +35,10 @@ export function TopbarUser() {
     // Mesmo padrão de chave usado em lib/auth.ts (subdomínio + sufixo)
     const subdomain = window.location.hostname.split('.')[0]
     const storageKey = `${subdomain}-directa-user`
+    const sectorKey = `${subdomain}-directa-sector`
 
     const raw = localStorage.getItem(storageKey)
+    const rawSector = localStorage.getItem(sectorKey)
     let parsed: any = null
     try {
       parsed = raw ? JSON.parse(raw) : null
@@ -44,9 +46,17 @@ export function TopbarUser() {
       parsed = null
     }
 
+    let parsedSector: any = null
+    try {
+      parsedSector = rawSector ? JSON.parse(rawSector) : null
+    } catch {
+      parsedSector = null
+    }
+
     if (parsed && typeof parsed === 'object') {
       const avatarUrl: string | null = parsed?.image?.url ?? parsed?.avatar_url ?? null
-      setUser({ email: parsed.email ?? '', name: parsed.name ?? '', avatarUrl })
+      const sectorName: string | null = typeof parsedSector?.name === 'string' ? parsedSector.name : null
+      setUser({ email: parsed.email ?? '', name: parsed.name ?? '', sectorName, avatarUrl })
     } else {
       setUser(null)
       navigate({ to: '/sign-in' })
@@ -113,7 +123,7 @@ export function TopbarUser() {
           </Avatar>
           <div className="hidden sm:grid text-left text-sm leading-tight">
             <span className="truncate font-medium max-w-[160px]">{user?.name || ''}</span>
-            <span className="truncate text-xs max-w-[160px] text-muted-foreground">{user?.email || ''}</span>
+            <span className="truncate text-xs max-w-[160px] text-muted-foreground">{user?.sectorName || ''}</span>
           </div>
           <ChevronsUpDown className="ml-auto size-4" />
         </Button>

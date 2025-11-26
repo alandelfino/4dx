@@ -85,6 +85,18 @@ function RouteComponent() {
   }, [isError, error])
   useEffect(() => { setSelectedIds([]) }, [currentPage, perPage, isRefetching])
   useEffect(() => { if (currentPage > totalPages && totalPages > 0) setCurrentPage(totalPages) }, [totalPages, currentPage])
+  useEffect(() => {
+    return () => {
+      setSelectedIds([])
+      setOpenCreate(false)
+      setOpenEdit(null)
+      setOpenDelete(null)
+      setCurrentPage(1)
+      setPerPage(20)
+      setExpanded({})
+      qc.removeQueries({ queryKey: ['sectors'] })
+    }
+  }, [])
 
   const [expanded, setExpanded] = useState<Record<number, boolean>>({})
 

@@ -1,31 +1,42 @@
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { auth } from '@/lib/auth'
-import { Copyright } from "lucide-react";
+import { Users, GitBranch, Target, Tag, Layers } from "lucide-react";
 
 export function Navigation() {
 
     const router = useRouterState()
     const isDirector = auth.getCurrentSector()?.profile === 'director'
+    const goalsHref = isDirector ? '/dashboard/goals' : '/dashboard/goals-collaborator'
 
     const navigations = [
         {
-            groupName: 'Base',
+            groupName: 'Objetivos',
+            items: [
+                {
+                    label: 'Metas',
+                    icon: <Target />,
+                    href: goalsHref,
+                },
+            ]
+        },
+        {
+            groupName: 'Configurações',
             items: [
                 {
                     label: 'Colaboradores',
-                    icon: <Copyright />,
+                    icon: <Users />,
                     href: '/dashboard/collaborators',
                 },
                 {
                     label: 'Setores',
-                    icon: <Copyright />,
+                    icon: <GitBranch />,
                     href: '/dashboard/sectors',
                 },
                 {
-                    label: 'Metas',
-                    icon: <Copyright />,
-                    href: '/dashboard/goals',
+                    label: 'Segmentos',
+                    icon: <Layers />,
+                    href: '/dashboard/segments',
                 },
             ]
         },
@@ -34,7 +45,7 @@ export function Navigation() {
             items: [
                 {
                     label: 'Marcas',
-                    icon: <Copyright />,
+                    icon: <Tag />,
                     href: '/dashboard/brands',
                 },
             ]
@@ -46,7 +57,8 @@ export function Navigation() {
         items: group.items.filter((item) => (
             (item.href !== '/dashboard/collaborators' || isDirector) &&
             (item.href !== '/dashboard/sectors' || isDirector) &&
-            (item.href !== '/dashboard/goals' || isDirector)
+            (item.href !== '/dashboard/segments' || isDirector) &&
+            true
         ))
     }))
 

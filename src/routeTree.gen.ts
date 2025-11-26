@@ -12,9 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SignInIndexRouteImport } from './routes/sign-in/index'
+import { Route as CompanyNotFoundIndexRouteImport } from './routes/company-not-found/index'
 import { Route as AccessDeniedIndexRouteImport } from './routes/access-denied/index'
+import { Route as DashboardSegmentsIndexRouteImport } from './routes/dashboard/segments/index'
 import { Route as DashboardSectorsIndexRouteImport } from './routes/dashboard/sectors/index'
 import { Route as DashboardGoalsIndexRouteImport } from './routes/dashboard/goals/index'
+import { Route as DashboardGoalsCollaboratorIndexRouteImport } from './routes/dashboard/goals-collaborator/index'
 import { Route as DashboardCollaboratorsIndexRouteImport } from './routes/dashboard/collaborators/index'
 import { Route as DashboardBrandsIndexRouteImport } from './routes/dashboard/brands/index'
 
@@ -33,10 +36,20 @@ const SignInIndexRoute = SignInIndexRouteImport.update({
   path: '/sign-in/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CompanyNotFoundIndexRoute = CompanyNotFoundIndexRouteImport.update({
+  id: '/company-not-found/',
+  path: '/company-not-found/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AccessDeniedIndexRoute = AccessDeniedIndexRouteImport.update({
   id: '/access-denied/',
   path: '/access-denied/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardSegmentsIndexRoute = DashboardSegmentsIndexRouteImport.update({
+  id: '/segments/',
+  path: '/segments/',
+  getParentRoute: () => DashboardRouteRoute,
 } as any)
 const DashboardSectorsIndexRoute = DashboardSectorsIndexRouteImport.update({
   id: '/sectors/',
@@ -48,6 +61,12 @@ const DashboardGoalsIndexRoute = DashboardGoalsIndexRouteImport.update({
   path: '/goals/',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
+const DashboardGoalsCollaboratorIndexRoute =
+  DashboardGoalsCollaboratorIndexRouteImport.update({
+    id: '/goals-collaborator/',
+    path: '/goals-collaborator/',
+    getParentRoute: () => DashboardRouteRoute,
+  } as any)
 const DashboardCollaboratorsIndexRoute =
   DashboardCollaboratorsIndexRouteImport.update({
     id: '/collaborators/',
@@ -64,32 +83,41 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
   '/access-denied': typeof AccessDeniedIndexRoute
+  '/company-not-found': typeof CompanyNotFoundIndexRoute
   '/sign-in': typeof SignInIndexRoute
   '/dashboard/brands': typeof DashboardBrandsIndexRoute
   '/dashboard/collaborators': typeof DashboardCollaboratorsIndexRoute
+  '/dashboard/goals-collaborator': typeof DashboardGoalsCollaboratorIndexRoute
   '/dashboard/goals': typeof DashboardGoalsIndexRoute
   '/dashboard/sectors': typeof DashboardSectorsIndexRoute
+  '/dashboard/segments': typeof DashboardSegmentsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
   '/access-denied': typeof AccessDeniedIndexRoute
+  '/company-not-found': typeof CompanyNotFoundIndexRoute
   '/sign-in': typeof SignInIndexRoute
   '/dashboard/brands': typeof DashboardBrandsIndexRoute
   '/dashboard/collaborators': typeof DashboardCollaboratorsIndexRoute
+  '/dashboard/goals-collaborator': typeof DashboardGoalsCollaboratorIndexRoute
   '/dashboard/goals': typeof DashboardGoalsIndexRoute
   '/dashboard/sectors': typeof DashboardSectorsIndexRoute
+  '/dashboard/segments': typeof DashboardSegmentsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
   '/access-denied/': typeof AccessDeniedIndexRoute
+  '/company-not-found/': typeof CompanyNotFoundIndexRoute
   '/sign-in/': typeof SignInIndexRoute
   '/dashboard/brands/': typeof DashboardBrandsIndexRoute
   '/dashboard/collaborators/': typeof DashboardCollaboratorsIndexRoute
+  '/dashboard/goals-collaborator/': typeof DashboardGoalsCollaboratorIndexRoute
   '/dashboard/goals/': typeof DashboardGoalsIndexRoute
   '/dashboard/sectors/': typeof DashboardSectorsIndexRoute
+  '/dashboard/segments/': typeof DashboardSegmentsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,37 +125,47 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/access-denied'
+    | '/company-not-found'
     | '/sign-in'
     | '/dashboard/brands'
     | '/dashboard/collaborators'
+    | '/dashboard/goals-collaborator'
     | '/dashboard/goals'
     | '/dashboard/sectors'
+    | '/dashboard/segments'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/dashboard'
     | '/access-denied'
+    | '/company-not-found'
     | '/sign-in'
     | '/dashboard/brands'
     | '/dashboard/collaborators'
+    | '/dashboard/goals-collaborator'
     | '/dashboard/goals'
     | '/dashboard/sectors'
+    | '/dashboard/segments'
   id:
     | '__root__'
     | '/'
     | '/dashboard'
     | '/access-denied/'
+    | '/company-not-found/'
     | '/sign-in/'
     | '/dashboard/brands/'
     | '/dashboard/collaborators/'
+    | '/dashboard/goals-collaborator/'
     | '/dashboard/goals/'
     | '/dashboard/sectors/'
+    | '/dashboard/segments/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
   AccessDeniedIndexRoute: typeof AccessDeniedIndexRoute
+  CompanyNotFoundIndexRoute: typeof CompanyNotFoundIndexRoute
   SignInIndexRoute: typeof SignInIndexRoute
 }
 
@@ -154,12 +192,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignInIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/company-not-found/': {
+      id: '/company-not-found/'
+      path: '/company-not-found'
+      fullPath: '/company-not-found'
+      preLoaderRoute: typeof CompanyNotFoundIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/access-denied/': {
       id: '/access-denied/'
       path: '/access-denied'
       fullPath: '/access-denied'
       preLoaderRoute: typeof AccessDeniedIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/segments/': {
+      id: '/dashboard/segments/'
+      path: '/segments'
+      fullPath: '/dashboard/segments'
+      preLoaderRoute: typeof DashboardSegmentsIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
     }
     '/dashboard/sectors/': {
       id: '/dashboard/sectors/'
@@ -173,6 +225,13 @@ declare module '@tanstack/react-router' {
       path: '/goals'
       fullPath: '/dashboard/goals'
       preLoaderRoute: typeof DashboardGoalsIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/goals-collaborator/': {
+      id: '/dashboard/goals-collaborator/'
+      path: '/goals-collaborator'
+      fullPath: '/dashboard/goals-collaborator'
+      preLoaderRoute: typeof DashboardGoalsCollaboratorIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
     '/dashboard/collaborators/': {
@@ -195,15 +254,19 @@ declare module '@tanstack/react-router' {
 interface DashboardRouteRouteChildren {
   DashboardBrandsIndexRoute: typeof DashboardBrandsIndexRoute
   DashboardCollaboratorsIndexRoute: typeof DashboardCollaboratorsIndexRoute
+  DashboardGoalsCollaboratorIndexRoute: typeof DashboardGoalsCollaboratorIndexRoute
   DashboardGoalsIndexRoute: typeof DashboardGoalsIndexRoute
   DashboardSectorsIndexRoute: typeof DashboardSectorsIndexRoute
+  DashboardSegmentsIndexRoute: typeof DashboardSegmentsIndexRoute
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardBrandsIndexRoute: DashboardBrandsIndexRoute,
   DashboardCollaboratorsIndexRoute: DashboardCollaboratorsIndexRoute,
+  DashboardGoalsCollaboratorIndexRoute: DashboardGoalsCollaboratorIndexRoute,
   DashboardGoalsIndexRoute: DashboardGoalsIndexRoute,
   DashboardSectorsIndexRoute: DashboardSectorsIndexRoute,
+  DashboardSegmentsIndexRoute: DashboardSegmentsIndexRoute,
 }
 
 const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
@@ -214,6 +277,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
   AccessDeniedIndexRoute: AccessDeniedIndexRoute,
+  CompanyNotFoundIndexRoute: CompanyNotFoundIndexRoute,
   SignInIndexRoute: SignInIndexRoute,
 }
 export const routeTree = rootRouteImport

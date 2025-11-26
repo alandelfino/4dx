@@ -9,7 +9,7 @@ export const Route = createFileRoute('/access-denied/')({
 function RouteComponent() {
   return (
     <div className="flex flex-col w-full h-full">
-      <Topbar title="Acesso negado" breadcrumbs={[{ label: "Início", href: "/", isLast: false }, { label: "Acesso negado", href: "/access-denied", isLast: true }]} />
+      <Topbar title="Acesso negado" breadcrumbs={[{ label: "Início", href: "/", isLast: false }, { label: "Acesso negado", href: "/access-denied", isLast: true }]} showSidebarTrigger={false} />
       <div className="flex flex-1 items-center justify-center p-6">
         <div className="max-w-md text-center grid gap-4">
           <h1 className="text-2xl font-semibold">Você não tem permissão para acessar esta página.</h1>
