@@ -1,22 +1,22 @@
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { auth } from '@/lib/auth'
-import { Users, GitBranch, Target, Tag, Layers } from "lucide-react";
+import { Users, GitBranch, Target, List } from "lucide-react";
 
 export function Navigation() {
-
     const router = useRouterState()
-    const isDirector = auth.getCurrentSector()?.profile === 'director'
-    const goalsHref = isDirector ? '/dashboard/goals' : '/dashboard/goals-collaborator'
-
     const navigations = [
         {
-            groupName: 'Objetivos',
+            groupName: 'Geral',
             items: [
                 {
-                    label: 'Metas',
+                    label: 'Meta',
                     icon: <Target />,
-                    href: goalsHref,
+                    href: '/director/dashboard/goals',
+                },
+                {
+                    label: 'Histórico de metas',
+                    icon: <List />,
+                    href: '/director/dashboard/goals/history',
                 },
             ]
         },
@@ -26,45 +26,20 @@ export function Navigation() {
                 {
                     label: 'Colaboradores',
                     icon: <Users />,
-                    href: '/dashboard/collaborators',
+                    href: '/director/dashboard/collaborators',
                 },
                 {
                     label: 'Setores',
                     icon: <GitBranch />,
-                    href: '/dashboard/sectors',
+                    href: '/director/dashboard/sectors',
                 },
-                {
-                    label: 'Segmentos',
-                    icon: <Layers />,
-                    href: '/dashboard/segments',
-                },
-            ]
-        },
-        {
-            groupName: 'Catálogo',
-            items: [
-                {
-                    label: 'Marcas',
-                    icon: <Tag />,
-                    href: '/dashboard/brands',
-                },
+                
             ]
         },
     ]
 
-    const filteredNavigations = navigations.map((group) => ({
-        ...group,
-        items: group.items.filter((item) => (
-            (item.href !== '/dashboard/collaborators' || isDirector) &&
-            (item.href !== '/dashboard/sectors' || isDirector) &&
-            (item.href !== '/dashboard/segments' || isDirector) &&
-            true
-        ))
-    }))
-
     return (
-
-        filteredNavigations.map((group) => (
+        navigations.map((group) => (
             <SidebarGroup key={group.groupName}>
                 <SidebarGroupLabel className="text-neutral-400 font-normal">{group.groupName}</SidebarGroupLabel>
                 <SidebarMenu>

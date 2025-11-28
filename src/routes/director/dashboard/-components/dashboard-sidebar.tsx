@@ -76,7 +76,7 @@ export function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sideb
                 <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:text-2xl data-[slot=sidebar-menu-button]:p-1.5! h-full font-confortaa rounded-lg hover:bg-transparent group-data-[state=collapsed]:p-0! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:items-center" >
 
                     {/* Company */}
-                    <Link to='/dashboard/brands' className='flex h-full items-center gap-2 group-data-[collapsible=icon]:mx-auto group-data-[state=collapsed]:px-0 group-data-[state=collapsed]:justify-center group-data-[state=collapsed]:gap-0 group-data-[state=collapsed]:grid group-data-[state=collapsed]:place-items-center transition-[padding] duration-200 ease-in-out' title='Marcas' aria-label='Marcas'>
+                    <Link to='/director/dashboard' className='flex h-full items-center gap-2 group-data-[collapsible=icon]:mx-auto group-data-[state=collapsed]:px-0 group-data-[state=collapsed]:justify-center group-data-[state=collapsed]:gap-0 group-data-[state=collapsed]:grid group-data-[state=collapsed]:place-items-center transition-[padding] duration-200 ease-in-out' title='Dashboard' aria-label='Dashboard'>
                         <Avatar className='self-center h-8 w-8 rounded-md border shadow-xs group-data-[state=collapsed]:h-6 group-data-[state=collapsed]:w-6 transition-all duration-200 ease-in-out'>
                             <AvatarImage src={company?.image?.url ?? company?.logo_url ?? undefined} alt={companyName} />
                             <AvatarFallback className='rounded-md text-[10px] leading-none font-semibold bg-white border'>

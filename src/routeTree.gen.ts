@@ -9,21 +9,20 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
+import { Route as DirectorRouteRouteImport } from './routes/director/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SignInIndexRouteImport } from './routes/sign-in/index'
 import { Route as CompanyNotFoundIndexRouteImport } from './routes/company-not-found/index'
-import { Route as AccessDeniedIndexRouteImport } from './routes/access-denied/index'
-import { Route as DashboardSegmentsIndexRouteImport } from './routes/dashboard/segments/index'
-import { Route as DashboardSectorsIndexRouteImport } from './routes/dashboard/sectors/index'
-import { Route as DashboardGoalsIndexRouteImport } from './routes/dashboard/goals/index'
-import { Route as DashboardGoalsCollaboratorIndexRouteImport } from './routes/dashboard/goals-collaborator/index'
-import { Route as DashboardCollaboratorsIndexRouteImport } from './routes/dashboard/collaborators/index'
-import { Route as DashboardBrandsIndexRouteImport } from './routes/dashboard/brands/index'
+import { Route as CollaboratorIndexRouteImport } from './routes/collaborator/index'
+import { Route as DirectorDashboardRouteRouteImport } from './routes/director/dashboard/route'
+import { Route as DirectorDashboardIndexRouteImport } from './routes/director/dashboard/index'
+import { Route as DirectorDashboardSectorsIndexRouteImport } from './routes/director/dashboard/sectors/index'
+import { Route as DirectorDashboardGoalIndexRouteImport } from './routes/director/dashboard/goal/index'
+import { Route as DirectorDashboardCollaboratorsIndexRouteImport } from './routes/director/dashboard/collaborators/index'
 
-const DashboardRouteRoute = DashboardRouteRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const DirectorRouteRoute = DirectorRouteRouteImport.update({
+  id: '/director',
+  path: '/director',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -41,141 +40,129 @@ const CompanyNotFoundIndexRoute = CompanyNotFoundIndexRouteImport.update({
   path: '/company-not-found/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AccessDeniedIndexRoute = AccessDeniedIndexRouteImport.update({
-  id: '/access-denied/',
-  path: '/access-denied/',
+const CollaboratorIndexRoute = CollaboratorIndexRouteImport.update({
+  id: '/collaborator/',
+  path: '/collaborator/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardSegmentsIndexRoute = DashboardSegmentsIndexRouteImport.update({
-  id: '/segments/',
-  path: '/segments/',
-  getParentRoute: () => DashboardRouteRoute,
+const DirectorDashboardRouteRoute = DirectorDashboardRouteRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => DirectorRouteRoute,
 } as any)
-const DashboardSectorsIndexRoute = DashboardSectorsIndexRouteImport.update({
-  id: '/sectors/',
-  path: '/sectors/',
-  getParentRoute: () => DashboardRouteRoute,
+const DirectorDashboardIndexRoute = DirectorDashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DirectorDashboardRouteRoute,
 } as any)
-const DashboardGoalsIndexRoute = DashboardGoalsIndexRouteImport.update({
-  id: '/goals/',
-  path: '/goals/',
-  getParentRoute: () => DashboardRouteRoute,
-} as any)
-const DashboardGoalsCollaboratorIndexRoute =
-  DashboardGoalsCollaboratorIndexRouteImport.update({
-    id: '/goals-collaborator/',
-    path: '/goals-collaborator/',
-    getParentRoute: () => DashboardRouteRoute,
+const DirectorDashboardSectorsIndexRoute =
+  DirectorDashboardSectorsIndexRouteImport.update({
+    id: '/sectors/',
+    path: '/sectors/',
+    getParentRoute: () => DirectorDashboardRouteRoute,
   } as any)
-const DashboardCollaboratorsIndexRoute =
-  DashboardCollaboratorsIndexRouteImport.update({
+const DirectorDashboardGoalIndexRoute =
+  DirectorDashboardGoalIndexRouteImport.update({
+    id: '/goal/',
+    path: '/goal/',
+    getParentRoute: () => DirectorDashboardRouteRoute,
+  } as any)
+const DirectorDashboardCollaboratorsIndexRoute =
+  DirectorDashboardCollaboratorsIndexRouteImport.update({
     id: '/collaborators/',
     path: '/collaborators/',
-    getParentRoute: () => DashboardRouteRoute,
+    getParentRoute: () => DirectorDashboardRouteRoute,
   } as any)
-const DashboardBrandsIndexRoute = DashboardBrandsIndexRouteImport.update({
-  id: '/brands/',
-  path: '/brands/',
-  getParentRoute: () => DashboardRouteRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRouteRouteWithChildren
-  '/access-denied': typeof AccessDeniedIndexRoute
+  '/director': typeof DirectorRouteRouteWithChildren
+  '/director/dashboard': typeof DirectorDashboardRouteRouteWithChildren
+  '/collaborator': typeof CollaboratorIndexRoute
   '/company-not-found': typeof CompanyNotFoundIndexRoute
   '/sign-in': typeof SignInIndexRoute
-  '/dashboard/brands': typeof DashboardBrandsIndexRoute
-  '/dashboard/collaborators': typeof DashboardCollaboratorsIndexRoute
-  '/dashboard/goals-collaborator': typeof DashboardGoalsCollaboratorIndexRoute
-  '/dashboard/goals': typeof DashboardGoalsIndexRoute
-  '/dashboard/sectors': typeof DashboardSectorsIndexRoute
-  '/dashboard/segments': typeof DashboardSegmentsIndexRoute
+  '/director/dashboard/': typeof DirectorDashboardIndexRoute
+  '/director/dashboard/collaborators': typeof DirectorDashboardCollaboratorsIndexRoute
+  '/director/dashboard/goal': typeof DirectorDashboardGoalIndexRoute
+  '/director/dashboard/sectors': typeof DirectorDashboardSectorsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRouteRouteWithChildren
-  '/access-denied': typeof AccessDeniedIndexRoute
+  '/director': typeof DirectorRouteRouteWithChildren
+  '/collaborator': typeof CollaboratorIndexRoute
   '/company-not-found': typeof CompanyNotFoundIndexRoute
   '/sign-in': typeof SignInIndexRoute
-  '/dashboard/brands': typeof DashboardBrandsIndexRoute
-  '/dashboard/collaborators': typeof DashboardCollaboratorsIndexRoute
-  '/dashboard/goals-collaborator': typeof DashboardGoalsCollaboratorIndexRoute
-  '/dashboard/goals': typeof DashboardGoalsIndexRoute
-  '/dashboard/sectors': typeof DashboardSectorsIndexRoute
-  '/dashboard/segments': typeof DashboardSegmentsIndexRoute
+  '/director/dashboard': typeof DirectorDashboardIndexRoute
+  '/director/dashboard/collaborators': typeof DirectorDashboardCollaboratorsIndexRoute
+  '/director/dashboard/goal': typeof DirectorDashboardGoalIndexRoute
+  '/director/dashboard/sectors': typeof DirectorDashboardSectorsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRouteRouteWithChildren
-  '/access-denied/': typeof AccessDeniedIndexRoute
+  '/director': typeof DirectorRouteRouteWithChildren
+  '/director/dashboard': typeof DirectorDashboardRouteRouteWithChildren
+  '/collaborator/': typeof CollaboratorIndexRoute
   '/company-not-found/': typeof CompanyNotFoundIndexRoute
   '/sign-in/': typeof SignInIndexRoute
-  '/dashboard/brands/': typeof DashboardBrandsIndexRoute
-  '/dashboard/collaborators/': typeof DashboardCollaboratorsIndexRoute
-  '/dashboard/goals-collaborator/': typeof DashboardGoalsCollaboratorIndexRoute
-  '/dashboard/goals/': typeof DashboardGoalsIndexRoute
-  '/dashboard/sectors/': typeof DashboardSectorsIndexRoute
-  '/dashboard/segments/': typeof DashboardSegmentsIndexRoute
+  '/director/dashboard/': typeof DirectorDashboardIndexRoute
+  '/director/dashboard/collaborators/': typeof DirectorDashboardCollaboratorsIndexRoute
+  '/director/dashboard/goal/': typeof DirectorDashboardGoalIndexRoute
+  '/director/dashboard/sectors/': typeof DirectorDashboardSectorsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/dashboard'
-    | '/access-denied'
+    | '/director'
+    | '/director/dashboard'
+    | '/collaborator'
     | '/company-not-found'
     | '/sign-in'
-    | '/dashboard/brands'
-    | '/dashboard/collaborators'
-    | '/dashboard/goals-collaborator'
-    | '/dashboard/goals'
-    | '/dashboard/sectors'
-    | '/dashboard/segments'
+    | '/director/dashboard/'
+    | '/director/dashboard/collaborators'
+    | '/director/dashboard/goal'
+    | '/director/dashboard/sectors'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/dashboard'
-    | '/access-denied'
+    | '/director'
+    | '/collaborator'
     | '/company-not-found'
     | '/sign-in'
-    | '/dashboard/brands'
-    | '/dashboard/collaborators'
-    | '/dashboard/goals-collaborator'
-    | '/dashboard/goals'
-    | '/dashboard/sectors'
-    | '/dashboard/segments'
+    | '/director/dashboard'
+    | '/director/dashboard/collaborators'
+    | '/director/dashboard/goal'
+    | '/director/dashboard/sectors'
   id:
     | '__root__'
     | '/'
-    | '/dashboard'
-    | '/access-denied/'
+    | '/director'
+    | '/director/dashboard'
+    | '/collaborator/'
     | '/company-not-found/'
     | '/sign-in/'
-    | '/dashboard/brands/'
-    | '/dashboard/collaborators/'
-    | '/dashboard/goals-collaborator/'
-    | '/dashboard/goals/'
-    | '/dashboard/sectors/'
-    | '/dashboard/segments/'
+    | '/director/dashboard/'
+    | '/director/dashboard/collaborators/'
+    | '/director/dashboard/goal/'
+    | '/director/dashboard/sectors/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
-  AccessDeniedIndexRoute: typeof AccessDeniedIndexRoute
+  DirectorRouteRoute: typeof DirectorRouteRouteWithChildren
+  CollaboratorIndexRoute: typeof CollaboratorIndexRoute
   CompanyNotFoundIndexRoute: typeof CompanyNotFoundIndexRoute
   SignInIndexRoute: typeof SignInIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteRouteImport
+    '/director': {
+      id: '/director'
+      path: '/director'
+      fullPath: '/director'
+      preLoaderRoute: typeof DirectorRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -199,84 +186,88 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CompanyNotFoundIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/access-denied/': {
-      id: '/access-denied/'
-      path: '/access-denied'
-      fullPath: '/access-denied'
-      preLoaderRoute: typeof AccessDeniedIndexRouteImport
+    '/collaborator/': {
+      id: '/collaborator/'
+      path: '/collaborator'
+      fullPath: '/collaborator'
+      preLoaderRoute: typeof CollaboratorIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/segments/': {
-      id: '/dashboard/segments/'
-      path: '/segments'
-      fullPath: '/dashboard/segments'
-      preLoaderRoute: typeof DashboardSegmentsIndexRouteImport
-      parentRoute: typeof DashboardRouteRoute
+    '/director/dashboard': {
+      id: '/director/dashboard'
+      path: '/dashboard'
+      fullPath: '/director/dashboard'
+      preLoaderRoute: typeof DirectorDashboardRouteRouteImport
+      parentRoute: typeof DirectorRouteRoute
     }
-    '/dashboard/sectors/': {
-      id: '/dashboard/sectors/'
+    '/director/dashboard/': {
+      id: '/director/dashboard/'
+      path: '/'
+      fullPath: '/director/dashboard/'
+      preLoaderRoute: typeof DirectorDashboardIndexRouteImport
+      parentRoute: typeof DirectorDashboardRouteRoute
+    }
+    '/director/dashboard/sectors/': {
+      id: '/director/dashboard/sectors/'
       path: '/sectors'
-      fullPath: '/dashboard/sectors'
-      preLoaderRoute: typeof DashboardSectorsIndexRouteImport
-      parentRoute: typeof DashboardRouteRoute
+      fullPath: '/director/dashboard/sectors'
+      preLoaderRoute: typeof DirectorDashboardSectorsIndexRouteImport
+      parentRoute: typeof DirectorDashboardRouteRoute
     }
-    '/dashboard/goals/': {
-      id: '/dashboard/goals/'
-      path: '/goals'
-      fullPath: '/dashboard/goals'
-      preLoaderRoute: typeof DashboardGoalsIndexRouteImport
-      parentRoute: typeof DashboardRouteRoute
+    '/director/dashboard/goal/': {
+      id: '/director/dashboard/goal/'
+      path: '/goal'
+      fullPath: '/director/dashboard/goal'
+      preLoaderRoute: typeof DirectorDashboardGoalIndexRouteImport
+      parentRoute: typeof DirectorDashboardRouteRoute
     }
-    '/dashboard/goals-collaborator/': {
-      id: '/dashboard/goals-collaborator/'
-      path: '/goals-collaborator'
-      fullPath: '/dashboard/goals-collaborator'
-      preLoaderRoute: typeof DashboardGoalsCollaboratorIndexRouteImport
-      parentRoute: typeof DashboardRouteRoute
-    }
-    '/dashboard/collaborators/': {
-      id: '/dashboard/collaborators/'
+    '/director/dashboard/collaborators/': {
+      id: '/director/dashboard/collaborators/'
       path: '/collaborators'
-      fullPath: '/dashboard/collaborators'
-      preLoaderRoute: typeof DashboardCollaboratorsIndexRouteImport
-      parentRoute: typeof DashboardRouteRoute
-    }
-    '/dashboard/brands/': {
-      id: '/dashboard/brands/'
-      path: '/brands'
-      fullPath: '/dashboard/brands'
-      preLoaderRoute: typeof DashboardBrandsIndexRouteImport
-      parentRoute: typeof DashboardRouteRoute
+      fullPath: '/director/dashboard/collaborators'
+      preLoaderRoute: typeof DirectorDashboardCollaboratorsIndexRouteImport
+      parentRoute: typeof DirectorDashboardRouteRoute
     }
   }
 }
 
-interface DashboardRouteRouteChildren {
-  DashboardBrandsIndexRoute: typeof DashboardBrandsIndexRoute
-  DashboardCollaboratorsIndexRoute: typeof DashboardCollaboratorsIndexRoute
-  DashboardGoalsCollaboratorIndexRoute: typeof DashboardGoalsCollaboratorIndexRoute
-  DashboardGoalsIndexRoute: typeof DashboardGoalsIndexRoute
-  DashboardSectorsIndexRoute: typeof DashboardSectorsIndexRoute
-  DashboardSegmentsIndexRoute: typeof DashboardSegmentsIndexRoute
+interface DirectorDashboardRouteRouteChildren {
+  DirectorDashboardIndexRoute: typeof DirectorDashboardIndexRoute
+  DirectorDashboardCollaboratorsIndexRoute: typeof DirectorDashboardCollaboratorsIndexRoute
+  DirectorDashboardGoalIndexRoute: typeof DirectorDashboardGoalIndexRoute
+  DirectorDashboardSectorsIndexRoute: typeof DirectorDashboardSectorsIndexRoute
 }
 
-const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
-  DashboardBrandsIndexRoute: DashboardBrandsIndexRoute,
-  DashboardCollaboratorsIndexRoute: DashboardCollaboratorsIndexRoute,
-  DashboardGoalsCollaboratorIndexRoute: DashboardGoalsCollaboratorIndexRoute,
-  DashboardGoalsIndexRoute: DashboardGoalsIndexRoute,
-  DashboardSectorsIndexRoute: DashboardSectorsIndexRoute,
-  DashboardSegmentsIndexRoute: DashboardSegmentsIndexRoute,
+const DirectorDashboardRouteRouteChildren: DirectorDashboardRouteRouteChildren =
+  {
+    DirectorDashboardIndexRoute: DirectorDashboardIndexRoute,
+    DirectorDashboardCollaboratorsIndexRoute:
+      DirectorDashboardCollaboratorsIndexRoute,
+    DirectorDashboardGoalIndexRoute: DirectorDashboardGoalIndexRoute,
+    DirectorDashboardSectorsIndexRoute: DirectorDashboardSectorsIndexRoute,
+  }
+
+const DirectorDashboardRouteRouteWithChildren =
+  DirectorDashboardRouteRoute._addFileChildren(
+    DirectorDashboardRouteRouteChildren,
+  )
+
+interface DirectorRouteRouteChildren {
+  DirectorDashboardRouteRoute: typeof DirectorDashboardRouteRouteWithChildren
 }
 
-const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
-  DashboardRouteRouteChildren,
+const DirectorRouteRouteChildren: DirectorRouteRouteChildren = {
+  DirectorDashboardRouteRoute: DirectorDashboardRouteRouteWithChildren,
+}
+
+const DirectorRouteRouteWithChildren = DirectorRouteRoute._addFileChildren(
+  DirectorRouteRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  DashboardRouteRoute: DashboardRouteRouteWithChildren,
-  AccessDeniedIndexRoute: AccessDeniedIndexRoute,
+  DirectorRouteRoute: DirectorRouteRouteWithChildren,
+  CollaboratorIndexRoute: CollaboratorIndexRoute,
   CompanyNotFoundIndexRoute: CompanyNotFoundIndexRoute,
   SignInIndexRoute: SignInIndexRoute,
 }

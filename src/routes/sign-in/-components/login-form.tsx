@@ -41,7 +41,14 @@ export function LoginForm({
           return
         }
         toast.success("Login realizado com sucesso!")
-        navigate({ to: "/dashboard" })
+        try {
+          const sector = auth.getCurrentSector()
+          const profile = sector?.profile
+          const to = profile === 'director' ? '/director/dashboard' : '/collaborator'
+          navigate({ to })
+        } catch {
+          navigate({ to: '/director/dashboard' })
+        }
       } else {
         const msg = (response as any)?.data?.message
         toast.error(msg ?? 'Credenciais inválidas')
@@ -58,7 +65,14 @@ export function LoginForm({
     onSuccess: (response) => {
       if (response.status === 200) {
         toast.success("Bem-vindo!")
-        navigate({ to: "/dashboard" })
+        try {
+          const sector = auth.getCurrentSector()
+          const profile = sector?.profile
+          const to = profile === 'director' ? '/director/dashboard' : '/collaborator'
+          navigate({ to })
+        } catch {
+          navigate({ to: '/director/dashboard' })
+        }
       } else {
         const msg = (response as any)?.data?.message
         toast.error(msg ?? 'Falha ao entrar no setor')
