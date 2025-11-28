@@ -1,19 +1,135 @@
 import { auth, privateInstance } from '@/lib/auth'
 import { createFileRoute } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
-import { ExternalLink, Loader, Loader2, Plus } from 'lucide-react'
+import { ExternalLink, Plus } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from '@/components/ui/sheet'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { Field } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { z } from 'zod'
+import { useForm } from 'react-hook-form'
+import type { FieldValues, Resolver } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { toast } from 'sonner'
+import { NumericFormat } from 'react-number-format'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar } from '@/components/ui/calendar'
+import type { AxiosError } from 'axios'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { CalendarDays, TrendingUp, TrendingDown, Minus, Check } from 'lucide-react'
+import { formatarMoeda } from '@/lib/format'
+import { ResponsiveContainer, Tooltip, Area, CartesianGrid, XAxis, YAxis, ComposedChart, Line } from 'recharts'
 
 export const Route = createFileRoute('/director/dashboard/goal/')({
     component: RouteComponent,
 })
 
 function RouteComponent() {
+    const qc = useQueryClient()
+    const [open, setOpen] = useState(false)
+    const [predOpen, setPredOpen] = useState(false)
+    const [editingPredId, setEditingPredId] = useState<number | null>(null)
+    const [editingValue, setEditingValue] = useState<number>(0)
+    
+    const objectiveLabelMap = { increase: 'Aumentar', decrease: 'Diminuir', maintain: 'Manter' }
+    const statusLabelMap = { scheduled: 'Agendada', running: 'Em andamento', paused: 'Pausada', delayed: 'Atrasada', completed: 'Concluída', canceled: 'Cancelada' } as const
+    const forecastStatusLabelMap = { good: 'Bom', neutral: 'Neutro', bad: 'Ruim', unknown: 'Desconhecido' } as const
+    const intervalOrder = ['daily','weekly','bi-weekly','monthly','quarterly','semiannual','annual'] as const
+    type Interval = typeof intervalOrder[number]
+    const getAllowedIntervals = (fromStr: string, toStr: string): Interval[] => {
+        if (!fromStr || !toStr) return intervalOrder.slice()
+        const from = new Date(fromStr)
+        const to = new Date(toStr)
+        if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return intervalOrder.slice()
+        const diffMs = Math.max(0, to.getTime() - from.getTime())
+        const diffDays = Math.max(1, Math.round(diffMs / (1000 * 60 * 60 * 24)))
+        const allowed: Interval[] = []
+        if (diffDays >= 1) allowed.push('daily')
+        if (diffDays >= 7) allowed.push('weekly')
+        if (diffDays >= 14) allowed.push('bi-weekly')
+        if (diffDays >= 28) allowed.push('monthly')
+        if (diffDays >= 84) allowed.push('quarterly')
+        if (diffDays >= 168) allowed.push('semiannual')
+        if (diffDays >= 330) allowed.push('annual')
+        return allowed
+    }
+    const goalInputSchema = z.object({
+        description: z.string({ message: 'Descrição é obrigatória' }).min(1, { message: 'Descrição é obrigatória' }),
+        from: z.preprocess((v) => (typeof v === 'string' ? Number(v.replace(/[^0-9.-]/g, '')) : v), z.number({ message: 'De inválido' })),
+        to: z.preprocess((v) => (typeof v === 'string' ? Number(v.replace(/[^0-9.-]/g, '')) : v), z.number({ message: 'Até inválido' })),
+        from_date: z.string({ message: 'Data inicial inválida' }).min(1, { message: 'Data inicial inválida' }),
+        to_date: z.string({ message: 'Data final inválida' }).min(1, { message: 'Data final inválida' }),
+        type: z.enum(['int', 'currency', 'percent', 'decimal'], { message: 'Tipo inválido' }),
+        interval: z.enum(['daily', 'weekly', 'bi-weekly', 'monthly', 'quarterly', 'semiannual', 'annual'], { message: 'Período inválido' }),
+        parent_id: z.preprocess((v) => (v == null || v === '' ? undefined : (typeof v === 'string' ? Number(v) : v)), z.number({ message: 'Meta pai inválida' }).optional()),
+        objective: z.enum(['increase', 'decrease', 'maintain'], { message: 'Objetivo inválido' }),
+    })
+    const form = useForm<FieldValues>({
+        resolver: zodResolver(goalInputSchema) as unknown as Resolver<FieldValues>,
+        defaultValues: { description: '', from: 0, to: 0, from_date: '', to_date: '', type: 'int', interval: 'monthly', parent_id: undefined, objective: 'increase' },
+    })
+    const typeValue = form.watch('type') as 'int' | 'currency' | 'percent' | 'decimal'
+    const fromDateValue = form.watch('from_date') as string
+    const toDateValue = form.watch('to_date') as string
+    const allowedIntervals = getAllowedIntervals(fromDateValue, toDateValue)
+    const createMut = useMutation({
+        mutationFn: async (input: z.infer<typeof goalInputSchema>) => {
+            const scale = input.type === 'int' ? 1 : 100
+            const fromD = new Date(input.from_date)
+            fromD.setHours(0, 0, 0, 0)
+            const toD = new Date(input.to_date)
+            toD.setHours(23, 59, 59, 999)
+            const payload = {
+                ...input,
+                from: Math.round(Number(input.from) * scale),
+                to: Math.round(Number(input.to) * scale),
+                from_date: fromD.getTime(),
+                to_date: toD.getTime(),
+            }
+            const res = await privateInstance.post('/api:director/goals', payload)
+            return res.data
+        },
+        onSuccess: () => {
+            toast.success('Meta cadastrada')
+            setOpen(false)
+            void qc.invalidateQueries({ queryKey: ['open-goal'] })
+        },
+        onError: (e) => {
+            const ax = e as AxiosError<{ message?: string }>
+            const msg = ax?.response?.data?.message ?? (e as { message?: string })?.message ?? 'Falha ao cadastrar meta'
+            toast.error(msg)
+        },
+    })
     const query = useQuery<{ [k: string]: unknown } | null>({
         queryKey: ['open-goal'],
         queryFn: async () => {
             const res = await privateInstance.get('/api:director/open-goal')
             return res.data ?? null
+        },
+    })
+
+    const updatePredictionMut = useMutation({
+        mutationFn: async (input: { id: number; value: number }) => {
+            const goalType = String(g?.type ?? 'int')
+            const scale = goalType === 'int' ? 1 : 100
+            const payload = { value: Math.round(Number(input.value) * scale), goal_id: Number(g?.id ?? 0) }
+            const res = await privateInstance.put(`/api:E8L0GHE0/goals_predictions/${input.id}`, payload)
+            return res.data
+        },
+        onSuccess: () => {
+            toast.success('Previsão atualizada')
+            setEditingPredId(null)
+            void qc.invalidateQueries({ queryKey: ['open-goal'] })
+        },
+        onError: (e) => {
+            const ax = e as AxiosError<{ message?: string }>
+            const msg = ax?.response?.data?.message ?? (e as { message?: string })?.message ?? 'Falha ao atualizar previsão'
+            toast.error(msg)
         },
     })
 
@@ -40,31 +156,695 @@ function RouteComponent() {
                 </p>
                 <div className='flex gap-4 items-center mt-3'>
                     <Button variant='outline'>Histórico de metas</Button>
-                    <Button><Plus /> Definir Meta</Button>
+                    <Sheet open={open} onOpenChange={setOpen}>
+                        <SheetTrigger asChild>
+                            <Button><Plus /> Definir Meta</Button>
+                        </SheetTrigger>
+                        <SheetContent className='sm:max-w-xl'>
+                            <SheetHeader>
+                                <SheetTitle>Definir meta</SheetTitle>
+                            </SheetHeader>
+                            <div className='p-4'>
+                                <Form {...form}>
+                                    <form
+                                        id='goal-create-form'
+                                        onSubmit={form.handleSubmit((values) => createMut.mutate(values as z.infer<typeof goalInputSchema>))}
+                                        className='flex flex-col gap-4'
+                                    >
+                                        <Field>
+                                            <div className='flex flex-col gap-4'>
+                                                <div className='flex gap-4'>
+                                                    <FormField<FieldValues>
+                                                        control={form.control}
+                                                        name='description'
+                                                        render={({ field }) => (
+                                                            <FormItem className='flex-1'>
+                                                                <FormLabel>Descrição</FormLabel>
+                                                                <FormControl>
+                                                                    <Input placeholder='Ex.: Vendas do trimestre' name={field.name} onChange={field.onChange} onBlur={field.onBlur} ref={field.ref} value={String(field.value ?? '')} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                </div>
+                                                <div className='grid grid-cols-3 gap-4'>
+                                                    <FormField<FieldValues>
+                                                        control={form.control}
+                                                        name='type'
+                                                        render={({ field }) => (
+                                                            <FormItem className='w-full'>
+                                                                <FormLabel>Tipo</FormLabel>
+                                                                <Select value={String(field.value ?? '')} onValueChange={field.onChange}>
+                                                                    <SelectTrigger className='w-full'>
+                                                                        <SelectValue placeholder='Tipo de meta' />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        <SelectGroup>
+                                                                            <SelectItem value='int'>Inteiro</SelectItem>
+                                                                            <SelectItem value='currency'>Moeda</SelectItem>
+                                                                            <SelectItem value='percent'>Percentual</SelectItem>
+                                                                            <SelectItem value='decimal'>Decimal</SelectItem>
+                                                                        </SelectGroup>
+                                                                    </SelectContent>
+                                                                </Select>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField<FieldValues>
+                                                        control={form.control}
+                                                    name='from'
+                                                    render={({ field }) => (
+                                                        <FormItem className='w-full'>
+                                                            <FormLabel>De</FormLabel>
+                                                            <FormControl>
+                                                                <NumericFormat
+                                                                    value={field.value ?? ''}
+                                                                    allowNegative={false}
+                                                                    thousandSeparator='.'
+                                                                    decimalSeparator=','
+                                                                    decimalScale={typeValue === 'int' ? 0 : typeValue === 'percent' ? 2 : 2}
+                                                                    fixedDecimalScale
+                                                                    suffix={typeValue === 'percent' ? ' %' : undefined}
+                                                                    prefix={typeValue === 'currency' ? 'R$ ' : undefined}
+                                                                    onValueChange={(values) => field.onChange(values.floatValue ?? 0)}
+                                                                    className='h-9 w-full rounded-md border px-3 py-1 text-sm'
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                    <FormField<FieldValues>
+                                                        control={form.control}
+                                                        name='to'
+                                                        render={({ field }) => (
+                                                        <FormItem className='w-full'>
+                                                            <FormLabel>Até</FormLabel>
+                                                            <FormControl>
+                                                                <NumericFormat
+                                                                    value={field.value ?? ''}
+                                                                    allowNegative={false}
+                                                                    thousandSeparator='.'
+                                                                    decimalSeparator=','
+                                                                    decimalScale={typeValue === 'int' ? 0 : typeValue === 'percent' ? 2 : 2}
+                                                                    fixedDecimalScale
+                                                                    suffix={typeValue === 'percent' ? ' %' : undefined}
+                                                                    prefix={typeValue === 'currency' ? 'R$ ' : undefined}
+                                                                    onValueChange={(values) => field.onChange(values.floatValue ?? 0)}
+                                                                    className='h-9 w-full rounded-md border px-3 py-1 text-sm'
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                            <div className='flex gap-4'>
+                                                <FormField<FieldValues>
+                                                    control={form.control}
+                                                    name='from_date'
+                                                    render={({ field }) => (
+                                                        <FormItem className='w-48'>
+                                                            <FormLabel>Data inicial</FormLabel>
+                                                            <Popover>
+                                                                <PopoverTrigger asChild>
+                                                                    <Button type='button' variant='outline' className='justify-start text-left font-normal w-full'>
+                                                                        {field.value ? new Date(field.value).toLocaleDateString('pt-BR') : 'Selecione a data'}
+                                                                    </Button>
+                                                                </PopoverTrigger>
+                                                                <PopoverContent align='start' className='w-auto p-0'>
+                                                                    <Calendar
+                                                                        selected={field.value ? new Date(field.value) : undefined}
+                                                                        onSelect={(d) => {
+                                                                            if (d) {
+                                                                                const yyyy = d.getFullYear()
+                                                                                const mm = String(d.getMonth() + 1).padStart(2, '0')
+                                                                                const dd = String(d.getDate()).padStart(2, '0')
+                                                                                field.onChange(`${yyyy}-${mm}-${dd}`)
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                </PopoverContent>
+                                                            </Popover>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField<FieldValues>
+                                                    control={form.control}
+                                                    name='to_date'
+                                                    render={({ field }) => (
+                                                        <FormItem className='w-48'>
+                                                            <FormLabel>Data final</FormLabel>
+                                                            <Popover>
+                                                                <PopoverTrigger asChild>
+                                                                    <Button type='button' variant='outline' className='justify-start text-left font-normal w-full'>
+                                                                        {field.value ? new Date(field.value).toLocaleDateString('pt-BR') : 'Selecione a data'}
+                                                                    </Button>
+                                                                </PopoverTrigger>
+                                                                <PopoverContent align='start' className='w-auto p-0'>
+                                                                    <Calendar
+                                                                        selected={field.value ? new Date(field.value) : undefined}
+                                                                        onSelect={(d) => {
+                                                                            if (d) {
+                                                                                const yyyy = d.getFullYear()
+                                                                                const mm = String(d.getMonth() + 1).padStart(2, '0')
+                                                                                const dd = String(d.getDate()).padStart(2, '0')
+                                                                                field.onChange(`${yyyy}-${mm}-${dd}`)
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                </PopoverContent>
+                                                            </Popover>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField<FieldValues>
+                                                    control={form.control}
+                                                    name='interval'
+                                                    render={({ field }) => (
+                                                        <FormItem className='ml-auto w-48'>
+                                                            <FormLabel>Período</FormLabel>
+                                                            <Select value={String(field.value ?? '')} onValueChange={field.onChange}>
+                                                                <SelectTrigger className='w-full'>
+                                                                    <SelectValue placeholder='Período' />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectGroup>
+                                                                        <SelectItem value='daily' disabled={!allowedIntervals.includes('daily')}>Diário</SelectItem>
+                                                                        <SelectItem value='weekly' disabled={!allowedIntervals.includes('weekly')}>Semanal</SelectItem>
+                                                                        <SelectItem value='bi-weekly' disabled={!allowedIntervals.includes('bi-weekly')}>Quinzenal</SelectItem>
+                                                                        <SelectItem value='monthly' disabled={!allowedIntervals.includes('monthly')}>Mensal</SelectItem>
+                                                                        <SelectItem value='quarterly' disabled={!allowedIntervals.includes('quarterly')}>Trimestral</SelectItem>
+                                                                        <SelectItem value='semiannual' disabled={!allowedIntervals.includes('semiannual')}>Semestral</SelectItem>
+                                                                        <SelectItem value='annual' disabled={!allowedIntervals.includes('annual')}>Anual</SelectItem>
+                                                                    </SelectGroup>
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                                
+                                                
+                                            </div>
+                                        </Field>
+                                    </form>
+                                </Form>
+                            </div>
+                            <SheetFooter className='grid grid-cols-2 justify-end border-t'>
+                                <SheetClose asChild className='w-full'>
+                                    <Button type='button' variant='outline'>Cancelar</Button>
+                                </SheetClose>
+                                <Button className="w-full" type='submit' form='goal-create-form' disabled={createMut.isPending}>Cadastrar</Button>
+                            </SheetFooter>
+                        </SheetContent>
+                    </Sheet>
                 </div>
                 <Button variant='link' className='mt-4 font-normal'>Saber mais <ExternalLink/> </Button>
             </div>
         )
     }
 
-    const entries = Object.entries(goal)
+    type Goal = {
+        id: number
+        created_at: number
+        updated_at: number
+        description: string
+        from: number
+        to: number
+        from_date: number
+        to_date: number
+        sector_id: number
+        company_id: number
+        type: 'int' | 'currency' | 'percent' | 'decimal'
+        interval: 'daily' | 'weekly' | 'bi-weekly' | 'monthly' | 'quarterly' | 'semiannual' | 'annual'
+        forecast_status: string
+        status: string
+        parent_id: number
+        objective: 'increase' | 'decrease' | 'maintain'
+        predictions?: { id: number; value: number; goal_id: number; date: string; company_id: number }[]
+        launches?: { id: number; value: number; goal_id: number; date: string; company_id: number }[]
+    }
+    const g = goal as Goal
 
     return (
         <div className='flex flex-col items-center justify-center h-screen'>
-            <h1 className='text-2xl font-bold'>Meta atual</h1>
-            <div className='mt-6 w-full max-w-xl border rounded-lg p-4'>
-                {entries.map(([key, value]) => (
-                    <div key={key} className='flex items-center justify-between py-2 border-b last:border-b-0'>
-                        <span className='font-medium'>{key}</span>
-                        <span className='text-sm text-neutral-700 dark:text-neutral-300'>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</span>
+            <Card className='w-full max-w-4xl'>
+                <CardHeader>
+                    <div className='flex items-center justify-between'>
+                        <CardTitle className='text-xl'>
+                            {(() => {
+                                const icon = g?.objective === 'increase' ? <TrendingUp className='inline mr-2' /> : g?.objective === 'decrease' ? <TrendingDown className='inline mr-2' /> : <Minus className='inline mr-2' />
+                                return <span>{icon}{String(g?.description ?? '')}</span>
+                            })()}
+                        </CardTitle>
+                        <div className='flex gap-2'>
+                            {(() => {
+                                const raw = String(g?.status ?? '') as keyof typeof statusLabelMap
+                                const label = statusLabelMap[raw] ?? raw
+                                return <Badge variant='secondary'>{label}</Badge>
+                            })()}
+                            {(() => {
+                                const raw = String(g?.forecast_status ?? '') as keyof typeof forecastStatusLabelMap
+                                const label = forecastStatusLabelMap[raw] ?? raw
+                                return <Badge variant='outline'>{label}</Badge>
+                            })()}
+                        </div>
                     </div>
-                ))}
-            </div>
+                    <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+                        <CalendarDays className='size-4' />
+                        <span>{new Date(Number(g?.from_date)).toLocaleDateString('pt-BR')} — {new Date(Number(g?.to_date)).toLocaleDateString('pt-BR')}</span>
+                        
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className='grid grid-cols-2 gap-6'>
+                        <div>
+                            <div className='text-xs text-muted-foreground'>De</div>
+                            <div className='text-lg font-semibold'>
+                                {(() => {
+                                    const t = String(g?.type ?? '')
+                                    const v = Number(g?.from ?? 0)
+                                    const n = t === 'int' ? v : v / 100
+                                    if (t === 'currency') return formatarMoeda(n)
+                                    if (t === 'percent') return `${n.toFixed(2)} %`
+                                    if (t === 'decimal') return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)
+                                    return new Intl.NumberFormat('pt-BR').format(n)
+                                })()}
+                            </div>
+                        </div>
+                        <div>
+                            <div className='text-xs text-muted-foreground'>Até</div>
+                            <div className='text-lg font-semibold'>
+                                {(() => {
+                                    const t = String(g?.type ?? '')
+                                    const v = Number(g?.to ?? 0)
+                                    const n = t === 'int' ? v : v / 100
+                                    if (t === 'currency') return formatarMoeda(n)
+                                    if (t === 'percent') return `${n.toFixed(2)} %`
+                                    if (t === 'decimal') return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)
+                                    return new Intl.NumberFormat('pt-BR').format(n)
+                                })()}
+                            </div>
+                        </div>
+                    </div>
+                    <div className='mt-2 text-sm text-muted-foreground'>
+                        {(() => {
+                            const pRaw = (g?.interval as Interval | undefined) ?? ((goal as { period?: Interval } | null)?.period)
+                            const p = String(pRaw ?? '') as 'daily' | 'weekly' | 'bi-weekly' | 'monthly' | 'quarterly' | 'semiannual' | 'annual'
+                            const map = { 'daily': 'Diário', 'weekly': 'Semanal', 'bi-weekly': 'Quinzenal', 'monthly': 'Mensal', 'quarterly': 'Trimestral', 'semiannual': 'Semestral', 'annual': 'Anual' }
+                            const label = map[p] ?? p
+                            return <span>Período: {label}</span>
+                        })()}
+                    </div>
+                </CardContent>
+                <CardContent>
+                    <div className='flex items-center justify-between'>
+                        <div className='text-sm font-medium'>Previsão vs Desempenho</div>
+                    </div>
+                    <div className='mt-2 h-56 w-full'>
+                        {(() => {
+                            const scale = (String(g.type ?? '') === 'int') ? 1 : 1 / 100
+                            const toLabel = (d: Date) => d.toLocaleDateString('pt-BR', { month: 'short' })
+                            const preds = Array.isArray(g?.predictions) ? (g?.predictions ?? []) : []
+                            const launches = Array.isArray(g?.launches) ? (g?.launches ?? []) : []
+                            const map: Record<string, { label: string; ts: number; forecast?: number; goal?: number }> = {}
+                            for (const p of preds) {
+                                const d = new Date(p.date)
+                                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+                                const label = toLabel(d)
+                                const ts = new Date(d.getFullYear(), d.getMonth(), 1).getTime()
+                                map[key] = { ...(map[key] ?? { label, ts }), label, ts, forecast: Number(p.value ?? 0) * scale, goal: map[key]?.goal }
+                            }
+                            for (const l of launches) {
+                                const d = new Date(l.date)
+                                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+                                const label = toLabel(d)
+                                const ts = new Date(d.getFullYear(), d.getMonth(), 1).getTime()
+                                const existing = map[key] ?? { label, ts }
+                                map[key] = { ...existing, label, ts, forecast: existing.forecast, goal: Number(l.value ?? 0) * scale }
+                            }
+                            const data = Object.values(map).sort((a, b) => a.ts - b.ts)
+                            return (
+                                <ResponsiveContainer width='100%' height='100%'>
+                                    <ComposedChart data={data} margin={{ top: 6, right: 12, left: 0, bottom: 0 }}>
+                                        <defs>
+                                            <linearGradient id='areaForecast' x1='0' y1='0' x2='0' y2='1'>
+                                                <stop offset='0%' stopColor='#9ca3af' stopOpacity={0.35} />
+                                                <stop offset='100%' stopColor='#9ca3af' stopOpacity={0} />
+                                            </linearGradient>
+                                            <linearGradient id='areaGoal' x1='0' y1='0' x2='0' y2='1'>
+                                                <stop offset='0%' stopColor='#d97706' stopOpacity={0.35} />
+                                                <stop offset='100%' stopColor='#d97706' stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid stroke='hsl(var(--border))' strokeOpacity={0.25} vertical={false} />
+                                        <XAxis dataKey='label' tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickMargin={8} axisLine={false} tickLine={false} />
+                                        <YAxis tick={false} axisLine={false} tickLine={false} width={0} />
+                                        <Tooltip
+                                            contentStyle={{ fontSize: 12 }}
+                                            formatter={(value: number, name) => {
+                                                const t = String(g?.type ?? '')
+                                                const v = Number(value ?? 0)
+                                                const label = name === 'forecast' ? 'Previsão' : 'Meta alcançada'
+                                                if (t === 'currency') return [formatarMoeda(v), label]
+                                                if (t === 'percent') return [`${v.toFixed(2)} %`, label]
+                                                if (t === 'decimal') return [new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v), label]
+                                                return [new Intl.NumberFormat('pt-BR').format(v), label]
+                                            }}
+                                        />
+                                        <Area type='monotone' dataKey='forecast' stroke='#9ca3af' strokeWidth={1} fill='url(#areaForecast)' />
+                                        <Area type='monotone' dataKey='goal' stroke='#d97706' strokeWidth={1} fill='url(#areaGoal)' />
+                                        <Line type='monotone' dataKey='forecast' stroke='#9ca3af' strokeWidth={1} dot={{ r: 1.5, fill: '#9ca3af' }} activeDot={{ r: 2 }} />
+                                        <Line type='monotone' dataKey='goal' stroke='#d97706' strokeWidth={1} dot={{ r: 1.5, fill: '#d97706' }} activeDot={{ r: 2 }} />
+                                    </ComposedChart>
+                                </ResponsiveContainer>
+                            )
+                        })()}
+                    </div>
+                </CardContent>
+                
+            </Card>
             <div className='flex gap-4 items-center mt-6'>
-                <Button variant='outline'>Histórico de metas</Button>
-                <Button><Plus /> Atualizar Meta</Button>
+                <Sheet open={open} onOpenChange={setOpen}>
+                    <SheetTrigger asChild>
+                        <Button><Plus /> Atualizar Meta</Button>
+                    </SheetTrigger>
+                    <SheetContent className='sm:max-w-xl'>
+                        <SheetHeader>
+                            <SheetTitle>Atualizar meta</SheetTitle>
+                        </SheetHeader>
+                        <div className='p-2'>
+                            <Form {...form}>
+                                <form
+                                    onSubmit={form.handleSubmit((values) => createMut.mutate(values as z.infer<typeof goalInputSchema>))}
+                                    className='flex flex-col gap-4'
+                                >
+                                    <Field>
+                                        <div className='flex flex-col gap-4'>
+                                            <div className='flex gap-4'>
+                                                <FormField<FieldValues>
+                                                    control={form.control}
+                                                    name='objective'
+                                                    render={({ field }) => (
+                                                        <FormItem className='w-40'>
+                                                            <FormLabel>Objetivo</FormLabel>
+                                                            <Select value={String(field.value ?? '')} onValueChange={field.onChange}>
+                                                                <SelectTrigger className='w-full'>
+                                                                    <SelectValue placeholder='Objetivo' />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectGroup>
+                                                                        <SelectItem value='increase'>Aumentar</SelectItem>
+                                                                        <SelectItem value='decrease'>Diminuir</SelectItem>
+                                                                        <SelectItem value='maintain'>Manter</SelectItem>
+                                                                    </SelectGroup>
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField<FieldValues>
+                                                    control={form.control}
+                                                    name='description'
+                                                    render={({ field }) => (
+                                                        <FormItem className='flex-1'>
+                                                        <FormLabel>{`${objectiveLabelMap[(form.watch('objective') ?? 'increase') as keyof typeof objectiveLabelMap]} o que?`}</FormLabel>
+                                                            <FormControl>
+                                                                <Input placeholder='Ex.: Vendas do trimestre' name={field.name} onChange={field.onChange} onBlur={field.onBlur} ref={field.ref} value={String(field.value ?? '')} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                            <div className='grid grid-cols-3 gap-4'>
+                                                <FormField<FieldValues>
+                                                    control={form.control}
+                                                    name='type'
+                                                    render={({ field }) => (
+                                                        <FormItem className='w-full'>
+                                                            <FormLabel>Tipo</FormLabel>
+                                                            <Select value={String(field.value ?? '')} onValueChange={field.onChange}>
+                                                                <SelectTrigger className='w-full'>
+                                                                    <SelectValue placeholder='Tipo de meta' />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectGroup>
+                                                                        <SelectItem value='int'>Inteiro</SelectItem>
+                                                                        <SelectItem value='currency'>Moeda</SelectItem>
+                                                                        <SelectItem value='percent'>Percentual</SelectItem>
+                                                                        <SelectItem value='decimal'>Decimal</SelectItem>
+                                                                    </SelectGroup>
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField<FieldValues>
+                                                    control={form.control}
+                                                    name='from'
+                                                    render={({ field }) => (
+                                                        <FormItem className='w-full'>
+                                                            <FormLabel>De</FormLabel>
+                                                            <FormControl>
+                                                                <NumericFormat
+                                                                    value={field.value ?? ''}
+                                                                    allowNegative={false}
+                                                                    thousandSeparator='.'
+                                                                    decimalSeparator=','
+                                                                    decimalScale={typeValue === 'int' ? 0 : typeValue === 'percent' ? 2 : 2}
+                                                                    fixedDecimalScale
+                                                                    suffix={typeValue === 'percent' ? ' %' : undefined}
+                                                                    prefix={typeValue === 'currency' ? 'R$ ' : undefined}
+                                                                    onValueChange={(values) => field.onChange(values.floatValue ?? 0)}
+                                                                    className='h-9 w-full rounded-md border px-3 py-1 text-sm'
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField<FieldValues>
+                                                    control={form.control}
+                                                    name='to'
+                                                    render={({ field }) => (
+                                                        <FormItem className='w-full'>
+                                                            <FormLabel>Até</FormLabel>
+                                                            <FormControl>
+                                                                <NumericFormat
+                                                                    value={field.value ?? ''}
+                                                                    allowNegative={false}
+                                                                    thousandSeparator='.'
+                                                                    decimalSeparator=','
+                                                                    decimalScale={typeValue === 'int' ? 0 : typeValue === 'percent' ? 2 : 2}
+                                                                    fixedDecimalScale
+                                                                    suffix={typeValue === 'percent' ? ' %' : undefined}
+                                                                    prefix={typeValue === 'currency' ? 'R$ ' : undefined}
+                                                                    onValueChange={(values) => field.onChange(values.floatValue ?? 0)}
+                                                                    className='h-9 w-full rounded-md border px-3 py-1 text-sm'
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                            <div className='flex gap-4'>
+                                                <FormField<FieldValues>
+                                                    control={form.control}
+                                                    name='from_date'
+                                                    render={({ field }) => (
+                                                        <FormItem className='w-48'>
+                                                            <FormLabel>Data inicial</FormLabel>
+                                                            <Popover>
+                                                                <PopoverTrigger asChild>
+                                                                    <Button type='button' variant='outline' className='justify-start text-left font-normal w-full'>
+                                                                        {field.value ? new Date(field.value).toLocaleDateString('pt-BR') : 'Selecione a data'}
+                                                                    </Button>
+                                                                </PopoverTrigger>
+                                                                <PopoverContent align='start' className='w-auto p-0'>
+                                                                    <Calendar
+                                                                        selected={field.value ? new Date(field.value) : undefined}
+                                                                        onSelect={(d) => {
+                                                                            if (d) {
+                                                                                const yyyy = d.getFullYear()
+                                                                                const mm = String(d.getMonth() + 1).padStart(2, '0')
+                                                                                const dd = String(d.getDate()).padStart(2, '0')
+                                                                                field.onChange(`${yyyy}-${mm}-${dd}`)
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                </PopoverContent>
+                                                            </Popover>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField<FieldValues>
+                                                    control={form.control}
+                                                    name='to_date'
+                                                    render={({ field }) => (
+                                                        <FormItem className='w-48'>
+                                                            <FormLabel>Data final</FormLabel>
+                                                            <Popover>
+                                                                <PopoverTrigger asChild>
+                                                                    <Button type='button' variant='outline' className='justify-start text-left font-normal w-full'>
+                                                                        {field.value ? new Date(field.value).toLocaleDateString('pt-BR') : 'Selecione a data'}
+                                                                    </Button>
+                                                                </PopoverTrigger>
+                                                                <PopoverContent align='start' className='w-auto p-0'>
+                                                                    <Calendar
+                                                                        selected={field.value ? new Date(field.value) : undefined}
+                                                                        onSelect={(d) => {
+                                                                            if (d) {
+                                                                                const yyyy = d.getFullYear()
+                                                                                const mm = String(d.getMonth() + 1).padStart(2, '0')
+                                                                                const dd = String(d.getDate()).padStart(2, '0')
+                                                                                field.onChange(`${yyyy}-${mm}-${dd}`)
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                </PopoverContent>
+                                                            </Popover>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField<FieldValues>
+                                                    control={form.control}
+                                                    name='interval'
+                                                    render={({ field }) => (
+                                                        <FormItem className='ml-auto w-48'>
+                                                            <FormLabel>Período</FormLabel>
+                                                            <Select value={String(field.value ?? '')} onValueChange={field.onChange}>
+                                                                <SelectTrigger className='w-full'>
+                                                                    <SelectValue placeholder='Período' />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectGroup>
+                                                                        <SelectItem value='daily' disabled={!allowedIntervals.includes('daily')}>Diário</SelectItem>
+                                                                        <SelectItem value='weekly' disabled={!allowedIntervals.includes('weekly')}>Semanal</SelectItem>
+                                                                        <SelectItem value='bi-weekly' disabled={!allowedIntervals.includes('bi-weekly')}>Quinzenal</SelectItem>
+                                                                        <SelectItem value='monthly' disabled={!allowedIntervals.includes('monthly')}>Mensal</SelectItem>
+                                                                        <SelectItem value='quarterly' disabled={!allowedIntervals.includes('quarterly')}>Trimestral</SelectItem>
+                                                                        <SelectItem value='semiannual' disabled={!allowedIntervals.includes('semiannual')}>Semestral</SelectItem>
+                                                                        <SelectItem value='annual' disabled={!allowedIntervals.includes('annual')}>Anual</SelectItem>
+                                                                    </SelectGroup>
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                        </div>
+                                    </Field>
+                                    <SheetFooter>
+                                        <Button type='submit' disabled={createMut.isPending}>Salvar</Button>
+                                    </SheetFooter>
+                                </form>
+                            </Form>
+                        </div>
+                    </SheetContent>
+                </Sheet>
+                <Sheet open={predOpen} onOpenChange={setPredOpen}>
+                    <SheetTrigger asChild>
+                        <Button>Modificar Previsões</Button>
+                    </SheetTrigger>
+                    <SheetContent className='sm:max-w-xl'>
+                        <SheetHeader>
+                            <SheetTitle>Modificar previsões</SheetTitle>
+                        </SheetHeader>
+                        <div className='p-4 flex flex-col'>
+                            {(() => {
+                                const items = Array.isArray(g?.predictions) ? (g?.predictions ?? []) : []
+                                const type = String(g?.type ?? 'int') as 'int' | 'currency' | 'percent' | 'decimal'
+                                const sorted = items.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                                const formatDisplay = (v: number) => {
+                                    const n = type === 'int' ? v : v / 100
+                                    if (type === 'currency') return formatarMoeda(n)
+                                    if (type === 'percent') return `${n.toFixed(2)} %`
+                                    if (type === 'decimal') return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)
+                                    return new Intl.NumberFormat('pt-BR').format(n)
+                                }
+                                return (
+                                    <div className='flex flex-col gap-2'>
+                                        <div className='grid grid-cols-3 gap-2 text-xs text-muted-foreground px-2'>
+                                            <div>Data</div>
+                                            <div className='text-center'>Valor</div>
+                                            <div className='text-right'>Ações</div>
+                                        </div>
+                                        <div className='overflow-y-auto space-y-2 max-h-[70vh]'>
+                                            {sorted.map((p) => {
+                                                const isEditing = editingPredId === p.id
+                                                const displayValue = type === 'int' ? Number(p.value ?? 0) : Number(p.value ?? 0) / 100
+                                                return (
+                                                    <div key={p.id} className='grid grid-cols-3 items-center gap-2 border rounded-md px-2 py-2'>
+                                                        <div className='text-sm'>{new Date(p.date).toLocaleDateString('pt-BR')}</div>
+                                                        <div className='text-sm text-center'>
+                                                            {isEditing ? (
+                                                                <div className='flex items-center justify-center gap-0'>
+                                                                    <NumericFormat
+                                                                        autoFocus
+                                                                        value={editingValue}
+                                                                        allowNegative={false}
+                                                                        thousandSeparator='.'
+                                                                        decimalSeparator=','
+                                                                        decimalScale={type === 'int' ? 0 : 2}
+                                                                        fixedDecimalScale={type !== 'int'}
+                                                                        suffix={type === 'percent' ? ' %' : undefined}
+                                                                        prefix={type === 'currency' ? 'R$ ' : undefined}
+                                                                        onValueChange={(values) => setEditingValue(values.floatValue ?? 0)}
+                                                                        onKeyDown={(ev) => {
+                                                                            if (ev.key === 'Enter') updatePredictionMut.mutate({ id: p.id, value: editingValue })
+                                                                        }}
+                                                                        className='h-8 w-full rounded-md border px-2 py-1 text-sm'
+                                                                    />
+                                                                    <Button size='sm' variant='ghost' className='h-8 px-2' onClick={() => updatePredictionMut.mutate({ id: p.id, value: editingValue })}>
+                                                                        <Check className='size-4 text-green-600' />
+                                                                    </Button>
+                                                                </div>
+                                                            ) : (
+                                                                <button
+                                                                    type='button'
+                                                                    className='w-full text-left'
+                                                                    onDoubleClick={() => { setEditingPredId(p.id); setEditingValue(displayValue) }}
+                                                                >
+                                                                    {formatDisplay(Number(p.value ?? 0))}
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        <div className='flex items-center justify-end gap-2'>
+                                                            {isEditing ? (
+                                                                <Button size='sm' variant='outline' onClick={() => setEditingPredId(null)}>Cancelar</Button>
+                                                            ) : (
+                                                                <Button size='sm' variant='outline' onClick={() => { setEditingPredId(p.id); setEditingValue(displayValue) }}>Editar</Button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                )
+                            })()}
+                        </div>
+                        <SheetFooter className='border-t'>
+                            <SheetClose asChild>
+                                <Button type='button' variant='outline' className='w-1/2'>Fechar</Button>
+                            </SheetClose>
+                        </SheetFooter>
+                    </SheetContent>
+                </Sheet>
             </div>
-            <Button variant='link' className='mt-4 font-normal'>Saber mais <ExternalLink/> </Button>
         </div>
     )
 }

@@ -121,18 +121,22 @@
   * {
     @apply font-geist border-border outline-ring/50 [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar]:h-[3px] [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-neutral-200 dark:[&::-webkit-scrollbar-track]:bg-transparent dark:[&::-webkit-scrollbar-thumb]:bg-neutral-200;
     /* Firefox */
-    scrollbar-width: thin; /* Aproxima o tamanho; Firefox não suporta valor exato em px */
-    scrollbar-color: #e5e5e5 transparent; /* thumb neutral-200, track transparente */
+    scrollbar-width: thin;
+    /* Aproxima o tamanho; Firefox não suporta valor exato em px */
+    scrollbar-color: #e5e5e5 transparent;
+    /* thumb neutral-200, track transparente */
   }
 
   *::-webkit-scrollbar {
     width: 3px;
     height: 3px;
   }
+
   *::-webkit-scrollbar-track {
     background: transparent;
     border-radius: 9999px;
   }
+
   *::-webkit-scrollbar-thumb {
     background-color: #e5e5e5;
     border-radius: 9999px;
@@ -140,10 +144,29 @@
 
   /* Firefox em modo escuro: manter thumb neutral-300 e track próximo de neutral-700 */
   .dark * {
-    scrollbar-color: #e5e5e5 transparent; /* thumb neutral-200, track transparente */
+    scrollbar-color: #e5e5e5 transparent;
+    /* thumb neutral-200, track transparente */
   }
 
   html body {
     @apply bg-background text-foreground w-full h-screen;
+  }
+}
+
+@layer base {
+  :root {
+    --chart-1: oklch(0.646 0.222 41.116);
+    --chart-2: oklch(0.6 0.118 184.704);
+    --chart-3: oklch(0.398 0.07 227.392);
+    --chart-4: oklch(0.828 0.189 84.429);
+    --chart-5: oklch(0.769 0.188 70.08);
+  }
+
+  .dark {
+    --chart-1: oklch(0.488 0.243 264.376);
+    --chart-2: oklch(0.696 0.17 162.48);
+    --chart-3: oklch(0.769 0.188 70.08);
+    --chart-4: oklch(0.627 0.265 303.9);
+    --chart-5: oklch(0.645 0.246 16.439);
   }
 }

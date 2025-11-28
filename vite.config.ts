@@ -20,6 +20,8 @@ export default defineConfig({
     },
   },
   server: {
-    host: "0.0.0.0"
+    host: 'grupotitanium.localhost',
+    port: 5173,
+    strictPort: true
   }
 })
