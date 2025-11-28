@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { CalendarDays, TrendingUp, TrendingDown, Minus, Check } from 'lucide-react'
 import { formatarMoeda } from '@/lib/format'
+import { Topbar } from '../-components/topbar'
 import { ResponsiveContainer, Tooltip, Area, CartesianGrid, XAxis, YAxis, ComposedChart, Line } from 'recharts'
 
 export const Route = createFileRoute('/director/dashboard/goal/')({
@@ -118,7 +119,7 @@ function RouteComponent() {
             const goalType = String(g?.type ?? 'int')
             const scale = goalType === 'int' ? 1 : 100
             const payload = { value: Math.round(Number(input.value) * scale), goal_id: Number(g?.id ?? 0) }
-            const res = await privateInstance.put(`/api:E8L0GHE0/goals_predictions/${input.id}`, payload)
+            const res = await privateInstance.put(`https://x8ki-letl-twmt.n7.xano.io/api:E8L0GHE0/goals_predictions/${input.id}`, payload)
             return res.data
         },
         onSuccess: () => {
@@ -393,8 +394,15 @@ function RouteComponent() {
     const g = goal as Goal
 
     return (
-        <div className='flex flex-col items-center justify-center h-screen'>
-            <Card className='w-full max-w-4xl'>
+        <main className='flex flex-col w-full h-full'>
+            <Topbar title='Meta' breadcrumbs={[{ label: 'Dashboard', href: '/director/dashboard', isLast: false }, { label: 'Meta', href: '/director/dashboard/goal', isLast: true }]} />
+            <div className='p-4 flex-1 grid place-items-center'>
+                <div className='flex flex-col items-center'>
+                    <div className='mb-4 text-center'>
+                        <h1 className='text-2xl font-bold'>Olá, {firstName}!</h1>
+                        <p className='text-muted-foreground text-sm'>Vamos transformar metas em resultados. Você está no comando.</p>
+                    </div>
+                    <Card className='w-full max-w-4xl'>
                 <CardHeader>
                     <div className='flex items-center justify-between'>
                         <CardTitle className='text-xl'>
@@ -423,7 +431,7 @@ function RouteComponent() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <div className='grid grid-cols-2 gap-6'>
+                    <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
                         <div>
                             <div className='text-xs text-muted-foreground'>De</div>
                             <div className='text-lg font-semibold'>
@@ -452,6 +460,43 @@ function RouteComponent() {
                                 })()}
                             </div>
                         </div>
+                        <div>
+                            <div className='text-xs text-muted-foreground'>Acumulado</div>
+                            <div className='text-lg font-semibold text-amber-600'>
+                                {(() => {
+                                    const t = String(g?.type ?? '')
+                                    const scale = t === 'int' ? 1 : 1 / 100
+                                    const launches = Array.isArray(g?.launches) ? (g?.launches ?? []) : []
+                                    const sum = launches.reduce((acc, l) => acc + Number(l.value ?? 0) * scale, 0)
+                                    if (t === 'currency') return formatarMoeda(sum)
+                                    if (t === 'percent') return `${sum.toFixed(2)} %`
+                                    if (t === 'decimal') return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(sum)
+                                    return new Intl.NumberFormat('pt-BR').format(sum)
+                                })()}
+                            </div>
+                        </div>
+                    </div>
+                    <div className='mt-3'>
+                        {(() => {
+                            const t = String(g?.type ?? '')
+                            const scale = t === 'int' ? 1 : 1 / 100
+                            const total = Number(g?.to ?? 0) * scale
+                            const launches = Array.isArray(g?.launches) ? (g?.launches ?? []) : []
+                            const sum = launches.reduce((acc, l) => acc + Number(l.value ?? 0) * scale, 0)
+                            const progressPct = total > 0 ? Math.min(100, Math.max(0, (sum / total) * 100)) : 0
+                            const remainingPct = Math.max(0, 100 - progressPct)
+                            return (
+                                <div className='flex flex-col gap-1'>
+                                    <div className='flex items-center justify-between text-xs text-muted-foreground'>
+                                        <span>Progresso: {progressPct.toFixed(1)}%</span>
+                                        <span>Faltante: {remainingPct.toFixed(1)}%</span>
+                                    </div>
+                                    <div className='h-2 w-full rounded-full bg-muted'>
+                                        <div className='h-full rounded-full bg-amber-500' style={{ width: `${progressPct}%` }} />
+                                    </div>
+                                </div>
+                            )
+                        })()}
                     </div>
                     <div className='mt-2 text-sm text-muted-foreground'>
                         {(() => {
@@ -466,8 +511,16 @@ function RouteComponent() {
                 <CardContent>
                     <div className='flex items-center justify-between'>
                         <div className='text-sm font-medium'>Previsão vs Desempenho</div>
+                        <div className='text-xs text-muted-foreground'>
+                            {(() => {
+                                const s = String(g?.forecast_status ?? '')
+                                const map: Record<string, string> = { good: 'Bom', average: 'Médio', bad: 'Ruim', poor: 'Ruim', excellent: 'Excelente' }
+                                const label = map[s] ?? s
+                                return <span>Desempenho: {label}</span>
+                            })()}
+                        </div>
                     </div>
-                    <div className='mt-2 h-56 w-full'>
+                    <div className='mt-2 h-44 sm:h-56 w-full'>
                         {(() => {
                             const scale = (String(g.type ?? '') === 'int') ? 1 : 1 / 100
                             const toLabel = (d: Date) => d.toLocaleDateString('pt-BR', { month: 'short' })
@@ -492,7 +545,7 @@ function RouteComponent() {
                             const data = Object.values(map).sort((a, b) => a.ts - b.ts)
                             return (
                                 <ResponsiveContainer width='100%' height='100%'>
-                                    <ComposedChart data={data} margin={{ top: 6, right: 12, left: 0, bottom: 0 }}>
+                                    <ComposedChart data={data} margin={{ top: 6, right: 12, left: 12, bottom: 8 }}>
                                         <defs>
                                             <linearGradient id='areaForecast' x1='0' y1='0' x2='0' y2='1'>
                                                 <stop offset='0%' stopColor='#9ca3af' stopOpacity={0.35} />
@@ -504,18 +557,37 @@ function RouteComponent() {
                                             </linearGradient>
                                         </defs>
                                         <CartesianGrid stroke='hsl(var(--border))' strokeOpacity={0.25} vertical={false} />
-                                        <XAxis dataKey='label' tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickMargin={8} axisLine={false} tickLine={false} />
+                                        <XAxis dataKey='label' tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickMargin={8} axisLine={false} tickLine={false} interval={0} padding={{ left: 12, right: 12 }} />
                                         <YAxis tick={false} axisLine={false} tickLine={false} width={0} />
                                         <Tooltip
-                                            contentStyle={{ fontSize: 12 }}
-                                            formatter={(value: number, name) => {
+                                            content={({ active, payload }) => {
+                                                if (!active || !payload || payload.length === 0) return null
+                                                const seen = new Set<string>()
                                                 const t = String(g?.type ?? '')
-                                                const v = Number(value ?? 0)
-                                                const label = name === 'forecast' ? 'Previsão' : 'Meta alcançada'
-                                                if (t === 'currency') return [formatarMoeda(v), label]
-                                                if (t === 'percent') return [`${v.toFixed(2)} %`, label]
-                                                if (t === 'decimal') return [new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v), label]
-                                                return [new Intl.NumberFormat('pt-BR').format(v), label]
+                                                const items = [] as { label: string; value: string }[]
+                                                for (const it of payload) {
+                                                    const key = String((it as any)?.dataKey ?? (it as any)?.name ?? '')
+                                                    if (!key || seen.has(key)) continue
+                                                    seen.add(key)
+                                                    const v = Number((it as any)?.value ?? 0)
+                                                    const label = key === 'forecast' ? 'Previsão' : 'Meta alcançada'
+                                                    let formatted = ''
+                                                    if (t === 'currency') formatted = formatarMoeda(v)
+                                                    else if (t === 'percent') formatted = `${v.toFixed(2)} %`
+                                                    else if (t === 'decimal') formatted = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)
+                                                    else formatted = new Intl.NumberFormat('pt-BR').format(v)
+                                                    items.push({ label, value: formatted })
+                                                }
+                                                return (
+                                                    <div className='border rounded-lg bg-background px-2.5 py-1.5 text-xs shadow-xl'>
+                                                        {items.map((it, idx) => (
+                                                            <div key={idx} className='flex items-center gap-2'>
+                                                                <span className='text-muted-foreground'>{it.label}</span>
+                                                                <span className='font-medium'>{it.value}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )
                                             }}
                                         />
                                         <Area type='monotone' dataKey='forecast' stroke='#9ca3af' strokeWidth={1} fill='url(#areaForecast)' />
@@ -529,8 +601,8 @@ function RouteComponent() {
                     </div>
                 </CardContent>
                 
-            </Card>
-            <div className='flex gap-4 items-center mt-6'>
+                    </Card>
+                    <div className='flex flex-wrap gap-2 items-center justify-center mt-6'>
                 <Sheet open={open} onOpenChange={setOpen}>
                     <SheetTrigger asChild>
                         <Button><Plus /> Atualizar Meta</Button>
@@ -844,7 +916,9 @@ function RouteComponent() {
                         </SheetFooter>
                     </SheetContent>
                 </Sheet>
+                    </div>
+                </div>
             </div>
-        </div>
+        </main>
     )
 }
