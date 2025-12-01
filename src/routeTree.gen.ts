@@ -10,19 +10,26 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as DirectorRouteRouteImport } from './routes/director/route'
+import { Route as CollaboratorRouteRouteImport } from './routes/collaborator/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SignInIndexRouteImport } from './routes/sign-in/index'
 import { Route as CompanyNotFoundIndexRouteImport } from './routes/company-not-found/index'
-import { Route as CollaboratorIndexRouteImport } from './routes/collaborator/index'
 import { Route as DirectorDashboardRouteRouteImport } from './routes/director/dashboard/route'
 import { Route as DirectorDashboardIndexRouteImport } from './routes/director/dashboard/index'
+import { Route as CollaboratorDashboardIndexRouteImport } from './routes/collaborator/dashboard/index'
 import { Route as DirectorDashboardSectorsIndexRouteImport } from './routes/director/dashboard/sectors/index'
 import { Route as DirectorDashboardGoalIndexRouteImport } from './routes/director/dashboard/goal/index'
 import { Route as DirectorDashboardCollaboratorsIndexRouteImport } from './routes/director/dashboard/collaborators/index'
+import { Route as CollaboratorDashboardGoalIndexRouteImport } from './routes/collaborator/dashboard/goal/index'
 
 const DirectorRouteRoute = DirectorRouteRouteImport.update({
   id: '/director',
   path: '/director',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CollaboratorRouteRoute = CollaboratorRouteRouteImport.update({
+  id: '/collaborator',
+  path: '/collaborator',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -40,11 +47,6 @@ const CompanyNotFoundIndexRoute = CompanyNotFoundIndexRouteImport.update({
   path: '/company-not-found/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CollaboratorIndexRoute = CollaboratorIndexRouteImport.update({
-  id: '/collaborator/',
-  path: '/collaborator/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DirectorDashboardRouteRoute = DirectorDashboardRouteRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -55,6 +57,12 @@ const DirectorDashboardIndexRoute = DirectorDashboardIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DirectorDashboardRouteRoute,
 } as any)
+const CollaboratorDashboardIndexRoute =
+  CollaboratorDashboardIndexRouteImport.update({
+    id: '/dashboard/',
+    path: '/dashboard/',
+    getParentRoute: () => CollaboratorRouteRoute,
+  } as any)
 const DirectorDashboardSectorsIndexRoute =
   DirectorDashboardSectorsIndexRouteImport.update({
     id: '/sectors/',
@@ -73,26 +81,36 @@ const DirectorDashboardCollaboratorsIndexRoute =
     path: '/collaborators/',
     getParentRoute: () => DirectorDashboardRouteRoute,
   } as any)
+const CollaboratorDashboardGoalIndexRoute =
+  CollaboratorDashboardGoalIndexRouteImport.update({
+    id: '/dashboard/goal/',
+    path: '/dashboard/goal/',
+    getParentRoute: () => CollaboratorRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/collaborator': typeof CollaboratorRouteRouteWithChildren
   '/director': typeof DirectorRouteRouteWithChildren
   '/director/dashboard': typeof DirectorDashboardRouteRouteWithChildren
-  '/collaborator': typeof CollaboratorIndexRoute
   '/company-not-found': typeof CompanyNotFoundIndexRoute
   '/sign-in': typeof SignInIndexRoute
+  '/collaborator/dashboard': typeof CollaboratorDashboardIndexRoute
   '/director/dashboard/': typeof DirectorDashboardIndexRoute
+  '/collaborator/dashboard/goal': typeof CollaboratorDashboardGoalIndexRoute
   '/director/dashboard/collaborators': typeof DirectorDashboardCollaboratorsIndexRoute
   '/director/dashboard/goal': typeof DirectorDashboardGoalIndexRoute
   '/director/dashboard/sectors': typeof DirectorDashboardSectorsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/collaborator': typeof CollaboratorRouteRouteWithChildren
   '/director': typeof DirectorRouteRouteWithChildren
-  '/collaborator': typeof CollaboratorIndexRoute
   '/company-not-found': typeof CompanyNotFoundIndexRoute
   '/sign-in': typeof SignInIndexRoute
+  '/collaborator/dashboard': typeof CollaboratorDashboardIndexRoute
   '/director/dashboard': typeof DirectorDashboardIndexRoute
+  '/collaborator/dashboard/goal': typeof CollaboratorDashboardGoalIndexRoute
   '/director/dashboard/collaborators': typeof DirectorDashboardCollaboratorsIndexRoute
   '/director/dashboard/goal': typeof DirectorDashboardGoalIndexRoute
   '/director/dashboard/sectors': typeof DirectorDashboardSectorsIndexRoute
@@ -100,12 +118,14 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/collaborator': typeof CollaboratorRouteRouteWithChildren
   '/director': typeof DirectorRouteRouteWithChildren
   '/director/dashboard': typeof DirectorDashboardRouteRouteWithChildren
-  '/collaborator/': typeof CollaboratorIndexRoute
   '/company-not-found/': typeof CompanyNotFoundIndexRoute
   '/sign-in/': typeof SignInIndexRoute
+  '/collaborator/dashboard/': typeof CollaboratorDashboardIndexRoute
   '/director/dashboard/': typeof DirectorDashboardIndexRoute
+  '/collaborator/dashboard/goal/': typeof CollaboratorDashboardGoalIndexRoute
   '/director/dashboard/collaborators/': typeof DirectorDashboardCollaboratorsIndexRoute
   '/director/dashboard/goal/': typeof DirectorDashboardGoalIndexRoute
   '/director/dashboard/sectors/': typeof DirectorDashboardSectorsIndexRoute
@@ -114,35 +134,41 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/collaborator'
     | '/director'
     | '/director/dashboard'
-    | '/collaborator'
     | '/company-not-found'
     | '/sign-in'
+    | '/collaborator/dashboard'
     | '/director/dashboard/'
+    | '/collaborator/dashboard/goal'
     | '/director/dashboard/collaborators'
     | '/director/dashboard/goal'
     | '/director/dashboard/sectors'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/director'
     | '/collaborator'
+    | '/director'
     | '/company-not-found'
     | '/sign-in'
+    | '/collaborator/dashboard'
     | '/director/dashboard'
+    | '/collaborator/dashboard/goal'
     | '/director/dashboard/collaborators'
     | '/director/dashboard/goal'
     | '/director/dashboard/sectors'
   id:
     | '__root__'
     | '/'
+    | '/collaborator'
     | '/director'
     | '/director/dashboard'
-    | '/collaborator/'
     | '/company-not-found/'
     | '/sign-in/'
+    | '/collaborator/dashboard/'
     | '/director/dashboard/'
+    | '/collaborator/dashboard/goal/'
     | '/director/dashboard/collaborators/'
     | '/director/dashboard/goal/'
     | '/director/dashboard/sectors/'
@@ -150,8 +176,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CollaboratorRouteRoute: typeof CollaboratorRouteRouteWithChildren
   DirectorRouteRoute: typeof DirectorRouteRouteWithChildren
-  CollaboratorIndexRoute: typeof CollaboratorIndexRoute
   CompanyNotFoundIndexRoute: typeof CompanyNotFoundIndexRoute
   SignInIndexRoute: typeof SignInIndexRoute
 }
@@ -163,6 +189,13 @@ declare module '@tanstack/react-router' {
       path: '/director'
       fullPath: '/director'
       preLoaderRoute: typeof DirectorRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/collaborator': {
+      id: '/collaborator'
+      path: '/collaborator'
+      fullPath: '/collaborator'
+      preLoaderRoute: typeof CollaboratorRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -186,13 +219,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CompanyNotFoundIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/collaborator/': {
-      id: '/collaborator/'
-      path: '/collaborator'
-      fullPath: '/collaborator'
-      preLoaderRoute: typeof CollaboratorIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/director/dashboard': {
       id: '/director/dashboard'
       path: '/dashboard'
@@ -206,6 +232,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/director/dashboard/'
       preLoaderRoute: typeof DirectorDashboardIndexRouteImport
       parentRoute: typeof DirectorDashboardRouteRoute
+    }
+    '/collaborator/dashboard/': {
+      id: '/collaborator/dashboard/'
+      path: '/dashboard'
+      fullPath: '/collaborator/dashboard'
+      preLoaderRoute: typeof CollaboratorDashboardIndexRouteImport
+      parentRoute: typeof CollaboratorRouteRoute
     }
     '/director/dashboard/sectors/': {
       id: '/director/dashboard/sectors/'
@@ -228,8 +261,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DirectorDashboardCollaboratorsIndexRouteImport
       parentRoute: typeof DirectorDashboardRouteRoute
     }
+    '/collaborator/dashboard/goal/': {
+      id: '/collaborator/dashboard/goal/'
+      path: '/dashboard/goal'
+      fullPath: '/collaborator/dashboard/goal'
+      preLoaderRoute: typeof CollaboratorDashboardGoalIndexRouteImport
+      parentRoute: typeof CollaboratorRouteRoute
+    }
   }
 }
+
+interface CollaboratorRouteRouteChildren {
+  CollaboratorDashboardIndexRoute: typeof CollaboratorDashboardIndexRoute
+  CollaboratorDashboardGoalIndexRoute: typeof CollaboratorDashboardGoalIndexRoute
+}
+
+const CollaboratorRouteRouteChildren: CollaboratorRouteRouteChildren = {
+  CollaboratorDashboardIndexRoute: CollaboratorDashboardIndexRoute,
+  CollaboratorDashboardGoalIndexRoute: CollaboratorDashboardGoalIndexRoute,
+}
+
+const CollaboratorRouteRouteWithChildren =
+  CollaboratorRouteRoute._addFileChildren(CollaboratorRouteRouteChildren)
 
 interface DirectorDashboardRouteRouteChildren {
   DirectorDashboardIndexRoute: typeof DirectorDashboardIndexRoute
@@ -266,8 +319,8 @@ const DirectorRouteRouteWithChildren = DirectorRouteRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CollaboratorRouteRoute: CollaboratorRouteRouteWithChildren,
   DirectorRouteRoute: DirectorRouteRouteWithChildren,
-  CollaboratorIndexRoute: CollaboratorIndexRoute,
   CompanyNotFoundIndexRoute: CompanyNotFoundIndexRoute,
   SignInIndexRoute: SignInIndexRoute,
 }

@@ -1,6 +1,6 @@
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Users, GitBranch, Target, List } from "lucide-react";
+import { Target, List } from "lucide-react";
 
 export function Navigation() {
     const router = useRouterState()
@@ -18,22 +18,6 @@ export function Navigation() {
                     icon: <List />,
                     href: '/director/dashboard/goals/history',
                 },
-            ]
-        },
-        {
-            groupName: 'Configurações',
-            items: [
-                {
-                    label: 'Colaboradores',
-                    icon: <Users />,
-                    href: '/director/dashboard/collaborators',
-                },
-                {
-                    label: 'Setores',
-                    icon: <GitBranch />,
-                    href: '/director/dashboard/sectors',
-                },
-                
             ]
         },
     ]

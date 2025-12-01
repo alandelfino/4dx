@@ -8,9 +8,10 @@ type CalendarProps = {
   onSelect?: (date?: Date) => void
   showOutsideDays?: boolean
   className?: string
+  isDisabled?: (date: Date) => boolean
 }
 
-export function Calendar({ className, showOutsideDays = true, selected, onSelect }: CalendarProps) {
+export function Calendar({ className, showOutsideDays = true, selected, onSelect, isDisabled }: CalendarProps) {
   const initial = selected ? new Date(selected.getFullYear(), selected.getMonth(), 1) : new Date(new Date().getFullYear(), new Date().getMonth(), 1)
   const [month, setMonth] = React.useState<Date>(initial)
 
@@ -55,15 +56,17 @@ export function Calendar({ className, showOutsideDays = true, selected, onSelect
             {row.map((cell, i) => {
               const selectedDay = isSameDay(selected, cell.date)
               const today = isSameDay(new Date(), cell.date)
+              const disabled = !!isDisabled?.(cell.date)
               const base = 'h-8 w-8 p-0 font-normal rounded-md flex items-center justify-center cursor-pointer'
               const outsideCls = cell.outside && showOutsideDays ? 'text-muted-foreground opacity-50' : ''
               const selectedCls = selectedDay ? 'bg-primary text-primary-foreground' : ''
               const todayCls = !selectedDay && today ? 'bg-accent text-accent-foreground' : ''
-              const cls = cn(base, outsideCls, selectedCls, todayCls)
+              const disabledCls = disabled ? 'text-muted-foreground opacity-50 cursor-not-allowed' : ''
+              const cls = cn(base, outsideCls, selectedCls, todayCls, disabledCls)
               if (!showOutsideDays && cell.outside) return <div key={i} className='w-8' />
               return (
                 <div key={i} className='w-8 text-center text-sm p-0 relative'>
-                  <button type='button' className={cls} onClick={() => onSelect?.(cell.date)}>
+                  <button type='button' className={cls} disabled={disabled} onClick={() => { if (!disabled) onSelect?.(cell.date) }}>
                     {cell.d}
                   </button>
                 </div>
