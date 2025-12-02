@@ -11,12 +11,12 @@ export function Navigation() {
                 {
                     label: 'Meta',
                     icon: <Target />,
-                    href: '/director/dashboard/goal',
+                    href: '/collaborator/dashboard/goal',
                 },
                 {
                     label: 'Histórico de metas',
                     icon: <List />,
-                    href: '/director/dashboard/goals/history',
+                    href: '/collaborator/dashboard/goals/history',
                 },
             ]
         },
